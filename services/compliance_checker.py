@@ -1,137 +1,188 @@
-import faiss
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from typing import List, Dict, Tuple
-from models.schemas import ComplianceResult, ComplianceIssue, ComplianceStatus, RiskLevel, LegalRequirement
-from services.ollama_client import OllamaClient
+from typing import List, Dict, Any
+from models.schemas import PolicyChecklist, PolicyItem, PolicyStatus, DocumentMetadata, DocumentType
+from services.ollama_client import IntelligentAnalyzer
 import asyncio
 
-class ComplianceChecker:
+class IntelligentComplianceEngine:
     def __init__(self):
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.index = None
-        self.requirements_cache = []
-        self.ollama_client = OllamaClient()
-        asyncio.create_task(self.ollama_client.initialize())
+        self.analyzer = IntelligentAnalyzer()
+        asyncio.create_task(self.analyzer.initialize())
     
-    async def extract_requirements(self, legal_text: str) -> List[LegalRequirement]:
-        requirements_data = await self.ollama_client.extract_requirements(legal_text)
+    async def analyze_documents(self, doc1_text: str, doc2_text: str) -> Dict[str, Any]:
+        doc1_analysis = await self.analyzer.analyze_document_type_and_structure(doc1_text)
+        doc2_analysis = await self.analyzer.analyze_document_type_and_structure(doc2_text)
         
-        requirements = []
-        for i, req_data in enumerate(requirements_data):
-            req = LegalRequirement(
-                id=req_data.get('id', f'REQ{i+1:03d}'),
-                description=req_data.get('description', ''),
-                category=req_data.get('category', 'other'),
-                source_section=req_data.get('source_section', ''),
-                mandatory=req_data.get('mandatory', True)
-            )
-            requirements.append(req)
+        doc1_metadata = self._create_metadata(doc1_analysis)
+        doc2_metadata = self._create_metadata(doc2_analysis)
         
-        self.requirements_cache = requirements
-        self._build_faiss_index([req.description for req in requirements])
-        
-        return requirements
+        return {
+            "doc1_analysis": doc1_analysis,
+            "doc2_analysis": doc2_analysis, 
+            "doc1_metadata": doc1_metadata,
+            "doc2_metadata": doc2_metadata,
+            "comparison_context": self._determine_comparison_context(doc1_analysis, doc2_analysis)
+        }
     
-    def _build_faiss_index(self, texts: List[str]):
-        if not texts:
-            return
-            
-        embeddings = self.embedding_model.encode(texts)
-        embeddings = embeddings.astype('float32')
+    def _create_metadata(self, analysis: Dict) -> DocumentMetadata:
+        doc_type_str = analysis.get('document_type', 'POLICY')
+        doc_type = DocumentType(doc_type_str) if doc_type_str in [e.value for e in DocumentType] else DocumentType.POLICY
         
-        dimension = embeddings.shape[1]
-        self.index = faiss.IndexFlatIP(dimension)
-        
-        faiss.normalize_L2(embeddings)
-        self.index.add(embeddings)
-    
-    def _find_relevant_sections(self, contract_text: str, top_k: int = 5) -> List[Tuple[str, float]]:
-        if not self.index:
-            return [(contract_text[:1000], 1.0)]
-        
-        sentences = self._split_into_sentences(contract_text)
-        if not sentences:
-            return [(contract_text[:1000], 1.0)]
-        
-        query_embeddings = self.embedding_model.encode(sentences)
-        query_embeddings = query_embeddings.astype('float32')
-        faiss.normalize_L2(query_embeddings)
-        
-        all_sections = []
-        for embedding in query_embeddings:
-            scores, indices = self.index.search(embedding.reshape(1, -1), min(top_k, len(self.requirements_cache)))
-            for score, idx in zip(scores[0], indices[0]):
-                if idx < len(sentences):
-                    all_sections.append((sentences[idx], float(score)))
-        
-        all_sections.sort(key=lambda x: x[1], reverse=True)
-        return all_sections[:top_k]
-    
-    def _split_into_sentences(self, text: str) -> List[str]:
-        import re
-        sentences = re.split(r'[.!?]+', text)
-        return [s.strip() for s in sentences if len(s.strip()) > 20]
-    
-    async def check_compliance(self, requirements: List[LegalRequirement], contract_text: str) -> ComplianceResult:
-        relevant_sections = self._find_relevant_sections(contract_text)
-        relevant_text = ' '.join([section[0] for section in relevant_sections])
-        
-        requirements_dict = [req.dict() for req in requirements]
-        compliance_results = await self.ollama_client.batch_check_compliance(requirements_dict, relevant_text)
-        
-        issues = []
-        compliant_count = 0
-        non_compliant_count = 0
-        partial_count = 0
-        
-        for req, result in zip(requirements, compliance_results):
-            status_str = result.get('status', 'NON_COMPLIANT')
-            
-            if status_str == 'COMPLIANT':
-                status = ComplianceStatus.COMPLIANT
-                compliant_count += 1
-            elif status_str == 'PARTIAL':
-                status = ComplianceStatus.PARTIAL
-                partial_count += 1
-            else:
-                status = ComplianceStatus.NON_COMPLIANT
-                non_compliant_count += 1
-            
-            risk_str = result.get('risk_level', 'MEDIUM')
-            risk_level = RiskLevel.HIGH if risk_str == 'HIGH' else RiskLevel.MEDIUM if risk_str == 'MEDIUM' else RiskLevel.LOW
-            
-            issue = ComplianceIssue(
-                requirement_id=req.id,
-                requirement_description=req.description,
-                status=status,
-                current_text=result.get('current_text'),
-                issue_description=result.get('issue_description'),
-                recommendation=result.get('recommendation'),
-                risk_level=risk_level,
-                source_section=req.source_section,
-                category=req.category
-            )
-            issues.append(issue)
-        
-        total_requirements = len(requirements)
-        compliance_score = (compliant_count + partial_count * 0.5) / total_requirements if total_requirements > 0 else 0
-        
-        missing_clauses = self._identify_missing_clauses(issues)
-        
-        return ComplianceResult(
-            total_requirements=total_requirements,
-            compliant_count=compliant_count,
-            non_compliant_count=non_compliant_count,
-            partial_count=partial_count,
-            compliance_score=round(compliance_score, 2),
-            issues=issues,
-            missing_clauses=missing_clauses
+        return DocumentMetadata(
+            document_type=doc_type,
+            title=analysis.get('title', 'Unknown Document'),
+            authority=analysis.get('authority'),
+            scope=analysis.get('scope', []),
+            key_topics=analysis.get('key_topics', [])
         )
     
-    def _identify_missing_clauses(self, issues: List[ComplianceIssue]) -> List[str]:
-        missing = []
-        for issue in issues:
-            if issue.status == ComplianceStatus.NON_COMPLIANT and not issue.current_text:
-                missing.append(f"{issue.category.title()}: {issue.requirement_description}")
-        return missing
+    def _determine_comparison_context(self, doc1_analysis: Dict, doc2_analysis: Dict) -> Dict[str, str]:
+        doc1_type = doc1_analysis.get('document_type', 'UNKNOWN')
+        doc2_type = doc2_analysis.get('document_type', 'UNKNOWN')
+        
+        if doc1_type in ['LAW', 'REGULATION'] and doc2_type in ['POLICY', 'CONTRACT']:
+            return {
+                "reference_doc": "doc1",
+                "target_doc": "doc2", 
+                "analysis_type": "compliance_check",
+                "description": f"Checking {doc2_type.lower()} compliance against {doc1_type.lower()}"
+            }
+        elif doc2_type in ['LAW', 'REGULATION'] and doc1_type in ['POLICY', 'CONTRACT']:
+            return {
+                "reference_doc": "doc2",
+                "target_doc": "doc1",
+                "analysis_type": "compliance_check", 
+                "description": f"Checking {doc1_type.lower()} compliance against {doc2_type.lower()}"
+            }
+        else:
+            return {
+                "reference_doc": "doc1",
+                "target_doc": "doc2",
+                "analysis_type": "gap_analysis",
+                "description": f"Comparing {doc1_type.lower()} with {doc2_type.lower()}"
+            }
+    
+    async def generate_intelligent_checklist(self, doc1_text: str, doc2_text: str, analysis_context: Dict) -> PolicyChecklist:
+        doc1_analysis = analysis_context["doc1_analysis"]
+        doc2_analysis = analysis_context["doc2_analysis"]
+        comparison_context = analysis_context["comparison_context"]
+        
+        if comparison_context["reference_doc"] == "doc1":
+            reference_text, reference_analysis = doc1_text, doc1_analysis
+            target_text, target_analysis = doc2_text, doc2_analysis
+        else:
+            reference_text, reference_analysis = doc2_text, doc2_analysis
+            target_text, target_analysis = doc1_text, doc1_analysis
+        
+        requirements = await self.analyzer.extract_requirements_intelligently(
+            reference_text, reference_analysis, target_text, target_analysis
+        )
+        
+        if not requirements:
+            requirements = self._generate_fallback_requirements(reference_analysis, target_analysis)
+        
+        compliance_results = await self.analyzer.batch_compliance_check(
+            requirements, target_text, target_analysis
+        )
+        
+        policy_items = []
+        for req, result in zip(requirements, compliance_results):
+            if isinstance(result, Exception):
+                result = self._create_fallback_result()
+            
+            status = PolicyStatus(result.get('status', 'UNALIGNED'))
+            
+            policy_item = PolicyItem(
+                chapter=req.get('chapter', 'General'),
+                item=req.get('item', req.get('requirement', 'Unknown')),
+                requirement=req.get('requirement', ''),
+                status=status,
+                feedback=result.get('feedback', ''),
+                comments=result.get('comments', ''),
+                suggested_amendments=result.get('suggested_amendments', ''),
+                source_reference=req.get('source_reference', ''),
+                category=req.get('category', 'General')
+            )
+            policy_items.append(policy_item)
+        
+        overall_assessment = await self.analyzer.generate_overall_assessment(
+            [item.dict() for item in policy_items], reference_analysis, target_analysis
+        )
+        
+        return PolicyChecklist(
+            document_analysis={
+                "reference_document": reference_analysis,
+                "target_document": target_analysis,
+                "comparison_context": comparison_context
+            },
+            items=policy_items,
+            overall_feedback=self._create_overall_feedback(policy_items, overall_assessment),
+            recommendations=overall_assessment.get('strategic_recommendations', []),
+            additional_considerations=overall_assessment.get('additional_considerations', [])
+        )
+    
+    def _generate_fallback_requirements(self, reference_analysis: Dict, target_analysis: Dict) -> List[Dict]:
+        key_topics = reference_analysis.get('key_topics', []) + target_analysis.get('key_topics', [])
+        scope_areas = reference_analysis.get('scope', []) + target_analysis.get('scope', [])
+        
+        fallback_requirements = []
+        
+        for i, topic in enumerate(set(key_topics[:10]), 1):
+            fallback_requirements.append({
+                "chapter": f"Chapter {i}",
+                "item": f"{topic} Requirements", 
+                "requirement": f"Document must address {topic} adequately",
+                "source_reference": "Structural Analysis",
+                "category": topic.replace(' ', '_').lower(),
+                "mandatory": True,
+                "criteria": f"Presence and adequacy of {topic} provisions",
+                "expected_content": f"Clear policies and procedures for {topic}"
+            })
+        
+        for i, scope in enumerate(set(scope_areas[:5]), len(fallback_requirements)+1):
+            fallback_requirements.append({
+                "chapter": f"Section {i}",
+                "item": f"{scope} Coverage",
+                "requirement": f"Document must cover {scope} comprehensively", 
+                "source_reference": "Scope Analysis",
+                "category": "coverage",
+                "mandatory": True,
+                "criteria": f"Comprehensive coverage of {scope}",
+                "expected_content": f"Detailed provisions for {scope}"
+            })
+        
+        return fallback_requirements
+    
+    def _create_fallback_result(self) -> Dict:
+        return {
+            "status": "MODERATE",
+            "feedback": "Analysis requires manual review",
+            "comments": "Automated analysis was inconclusive",
+            "suggested_amendments": "Manual review recommended",
+            "priority": "MEDIUM",
+            "compliance_percentage": 50
+        }
+    
+    def _create_overall_feedback(self, items: List[PolicyItem], assessment: Dict) -> Dict[str, Any]:
+        aligned = len([item for item in items if item.status == PolicyStatus.ALIGNED])
+        moderate = len([item for item in items if item.status == PolicyStatus.MODERATE])
+        unaligned = len([item for item in items if item.status == PolicyStatus.UNALIGNED])
+        total = len(items)
+        
+        return {
+            "statistics": {
+                "aligned": aligned,
+                "moderate": moderate, 
+                "unaligned": unaligned,
+                "total": total,
+                "alignment_percentage": (aligned / total * 100) if total > 0 else 0,
+                "moderate_percentage": (moderate / total * 100) if total > 0 else 0,
+                "unaligned_percentage": (unaligned / total * 100) if total > 0 else 0
+            },
+            "assessment": assessment.get('overall_assessment', ''),
+            "key_strengths": assessment.get('key_strengths', []),
+            "critical_gaps": assessment.get('critical_gaps', []),
+            "risk_assessment": assessment.get('risk_assessment', ''),
+            "compliance_maturity": assessment.get('compliance_maturity', 'DEVELOPING'),
+            "improvement_timeline": assessment.get('improvement_timeline', ''),
+            "next_steps": assessment.get('next_steps', [])
+        }

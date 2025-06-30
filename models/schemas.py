@@ -1,45 +1,48 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from enum import Enum
 
-class ComplianceStatus(str, Enum):
-    COMPLIANT = "COMPLIANT"
-    NON_COMPLIANT = "NON_COMPLIANT"
-    PARTIAL = "PARTIAL"
+class PolicyStatus(str, Enum):
+    ALIGNED = "ALIGNED"
+    MODERATE = "MODERATE" 
+    UNALIGNED = "UNALIGNED"
 
-class RiskLevel(str, Enum):
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
+class DocumentType(str, Enum):
+    POLICY = "POLICY"
+    LAW = "LAW"
+    REGULATION = "REGULATION"
+    STANDARD = "STANDARD"
+    CONTRACT = "CONTRACT"
+    GUIDELINE = "GUIDELINE"
 
-class LegalRequirement(BaseModel):
-    id: str
-    description: str
-    category: str
-    source_section: str
-    mandatory: bool
-
-class ComplianceIssue(BaseModel):
-    requirement_id: str
-    requirement_description: str
-    status: ComplianceStatus
-    current_text: Optional[str] = None
-    issue_description: Optional[str] = None
-    recommendation: Optional[str] = None
-    risk_level: RiskLevel
-    source_section: str
+class PolicyItem(BaseModel):
+    chapter: str
+    item: str
+    requirement: str
+    status: PolicyStatus
+    feedback: str
+    comments: str
+    suggested_amendments: str
+    source_reference: str
     category: str
 
-class ComplianceResult(BaseModel):
-    total_requirements: int
-    compliant_count: int
-    non_compliant_count: int
-    partial_count: int
-    compliance_score: float
-    issues: List[ComplianceIssue]
-    missing_clauses: List[str]
+class PolicyChecklist(BaseModel):
+    document_analysis: Dict[str, Any]
+    items: List[PolicyItem]
+    overall_feedback: Dict[str, Any]
+    recommendations: List[str]
+    additional_considerations: List[str]
 
 class AnalysisResponse(BaseModel):
     task_id: str
     status: str
     message: str
+
+class DocumentMetadata(BaseModel):
+    document_type: DocumentType
+    title: str
+    version: Optional[str]
+    date: Optional[str]
+    authority: Optional[str]
+    scope: List[str]
+    key_topics: List[str]
