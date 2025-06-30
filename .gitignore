@@ -1,0 +1,5 @@
+legal_env/
+models/__pycache__/
+services/__pycache__/
+temp_files
+__pycache__/
