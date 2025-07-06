@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
@@ -14,6 +14,12 @@ class DocumentType(str, Enum):
     STANDARD = "STANDARD"
     CONTRACT = "CONTRACT"
     GUIDELINE = "GUIDELINE"
+    AMENDMENT = "AMENDMENT"
+    DECREE = "DECREE"
+    CODE = "CODE"
+    CIRCULAR = "CIRCULAR"
+    NOTICE = "NOTICE"
+    UNKNOWN = "UNKNOWN"
 
 class PolicyItem(BaseModel):
     chapter: str
@@ -41,8 +47,8 @@ class AnalysisResponse(BaseModel):
 class DocumentMetadata(BaseModel):
     document_type: DocumentType
     title: str
-    version: Optional[str]
-    date: Optional[str]
-    authority: Optional[str]
-    scope: List[str]
-    key_topics: List[str]
+    version: Optional[str] = None
+    date: Optional[str] = None
+    authority: Optional[str] = None
+    scope: List[str] = Field(default_factory=list)
+    key_topics: List[str] = Field(default_factory=list)

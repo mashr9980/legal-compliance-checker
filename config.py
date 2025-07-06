@@ -15,20 +15,28 @@ REPORTS_DIR = BASE_DIR / "reports"
 TEMP_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".pdf"}
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 MAX_CONCURRENT_REQUESTS = 3
 
 LEGAL_CATEGORIES = [
-    "termination",
-    "payment", 
-    "leave",
-    "confidentiality",
-    "liability",
+    "employment_terms",
+    "compensation_benefits", 
+    "working_conditions",
+    "termination_conditions",
+    "confidentiality_non_compete",
     "intellectual_property",
     "dispute_resolution",
-    "compliance",
+    "compliance_regulatory",
+    "health_safety",
+    "leave_policies",
+    "discrimination_harassment",
+    "data_protection",
     "other"
 ]
+
+CHUNK_SIZE = 4000
+OVERLAP_SIZE = 200
+MAX_PROMPT_LENGTH = 8000
