@@ -694,6 +694,13 @@ body {
     to { transform: rotate(360deg); }
 }
 
+.file-info-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
 .file-info {
     display: flex;
     align-items: center;
@@ -713,6 +720,7 @@ body {
     font-weight: 500;
     color: var(--text-primary);
     flex-grow: 1;
+    word-break: break-word;
 }
 
 .file-size {
@@ -1102,6 +1110,17 @@ body {
     }
     
     .step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .file-info {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--space-2);
+    }
+    
+    .analysis-note {
         flex-direction: column;
         text-align: center;
     }

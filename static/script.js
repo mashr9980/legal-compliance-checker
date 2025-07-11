@@ -1,32 +1,23 @@
-// Global variables
 let currentTaskId = null;
 let pollInterval = null;
 let analysisStartTime = null;
-let selectedFiles = {
-    file1: null,
-    file2: null
-};
+let selectedLegalFiles = [];
+let selectedPolicyFile = null;
 
-// API Configuration
 const API_BASE_URL = 'http://localhost:8000';
 
-// Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
 async function initializeApp() {
     try {
-        // Show loading screen
         showLoadingScreen();
         
-        // Check system status
         await checkSystemHealth();
         
-        // Initialize event listeners
         initializeEventListeners();
         
-        // Hide loading screen after a delay
         setTimeout(() => {
             hideLoadingScreen();
         }, 2000);
@@ -49,19 +40,15 @@ function hideLoadingScreen() {
 }
 
 function initializeEventListeners() {
-    // File input listeners
-    document.getElementById('file1').addEventListener('change', (e) => handleFileSelect(e, 1));
-    document.getElementById('file2').addEventListener('change', (e) => handleFileSelect(e, 2));
+    document.getElementById('legalFiles').addEventListener('change', handleLegalFilesSelect);
+    document.getElementById('policyFile').addEventListener('change', handlePolicyFileSelect);
     
-    // Navigation listeners
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', handleNavigation);
     });
     
-    // Scroll listener for active nav
     window.addEventListener('scroll', updateActiveNav);
     
-    // Modal close listeners
     document.addEventListener('click', handleModalClose);
 }
 
@@ -82,28 +69,95 @@ async function checkSystemHealth() {
     }
 }
 
-function handleFileSelect(event, fileNumber) {
+function handleLegalFilesSelect(event) {
+    const files = Array.from(event.target.files);
+    const uploadBox = document.getElementById('uploadBoxLegal');
+    const fileInfoContainer = document.getElementById('legalFilesInfo');
+    
+    for (const file of files) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            showNotification('Please select PDF files only.', 'error');
+            continue;
+        }
+        
+        if (file.size > 50 * 1024 * 1024) {
+            showNotification('File size too large. Please select files under 50MB.', 'error');
+            continue;
+        }
+        
+        if (selectedLegalFiles.some(f => f.name === file.name)) {
+            showNotification(`File "${file.name}" already selected.`, 'warning');
+            continue;
+        }
+        
+        selectedLegalFiles.push(file);
+        addLegalFileToUI(file);
+    }
+    
+    updateUploadBoxState();
+    updateAnalyzeButton();
+    
+    if (files.length > 0) {
+        showNotification(`${files.length} legal document(s) selected successfully!`, 'success');
+    }
+}
+
+function addLegalFileToUI(file) {
+    const fileInfoContainer = document.getElementById('legalFilesInfo');
+    const uploadBox = document.getElementById('uploadBoxLegal');
+    
+    const fileInfo = document.createElement('div');
+    fileInfo.className = 'file-info';
+    fileInfo.innerHTML = `
+        <i class="fas fa-file-pdf"></i>
+        <span class="file-name">${file.name}</span>
+        <span class="file-size">${formatFileSize(file.size)}</span>
+        <button class="btn-remove" onclick="removeLegalFile('${file.name}')">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    fileInfoContainer.appendChild(fileInfo);
+    uploadBox.classList.add('has-file');
+}
+
+function removeLegalFile(fileName) {
+    selectedLegalFiles = selectedLegalFiles.filter(file => file.name !== fileName);
+    
+    const fileInfoContainer = document.getElementById('legalFilesInfo');
+    const fileInfos = fileInfoContainer.querySelectorAll('.file-info');
+    
+    fileInfos.forEach(info => {
+        if (info.querySelector('.file-name').textContent === fileName) {
+            info.remove();
+        }
+    });
+    
+    updateUploadBoxState();
+    updateAnalyzeButton();
+    
+    showNotification(`File "${fileName}" removed.`, 'info');
+}
+
+function handlePolicyFileSelect(event) {
     const file = event.target.files[0];
-    const uploadBox = document.getElementById(`uploadBox${fileNumber}`);
-    const fileInfo = document.getElementById(`file${fileNumber}Info`);
+    const uploadBox = document.getElementById('uploadBoxPolicy');
+    const fileInfo = document.getElementById('policyFileInfo');
     const uploadContent = uploadBox.querySelector('.upload-content');
     
     if (file) {
-        // Validate file
         if (!file.name.toLowerCase().endsWith('.pdf')) {
             showNotification('Please select a PDF file only.', 'error');
             return;
         }
         
-        if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        if (file.size > 50 * 1024 * 1024) {
             showNotification('File size too large. Please select a file under 50MB.', 'error');
             return;
         }
         
-        // Store file
-        selectedFiles[`file${fileNumber}`] = file;
+        selectedPolicyFile = file;
         
-        // Update UI
         uploadBox.classList.add('has-file');
         fileInfo.style.display = 'flex';
         fileInfo.querySelector('.file-name').textContent = file.name;
@@ -111,64 +165,82 @@ function handleFileSelect(event, fileNumber) {
         uploadContent.querySelector('.btn-upload').style.display = 'none';
         uploadContent.querySelector('p').style.display = 'none';
         
-        // Check if both files are selected
         updateAnalyzeButton();
         
-        showNotification(`File "${file.name}" selected successfully!`, 'success');
+        showNotification(`Policy file "${file.name}" selected successfully!`, 'success');
     }
 }
 
-function removeFile(fileNumber) {
-    const uploadBox = document.getElementById(`uploadBox${fileNumber}`);
-    const fileInfo = document.getElementById(`file${fileNumber}Info`);
+function removePolicyFile() {
+    const uploadBox = document.getElementById('uploadBoxPolicy');
+    const fileInfo = document.getElementById('policyFileInfo');
     const uploadContent = uploadBox.querySelector('.upload-content');
-    const fileInput = document.getElementById(`file${fileNumber}`);
+    const fileInput = document.getElementById('policyFile');
     
-    // Clear file
-    selectedFiles[`file${fileNumber}`] = null;
+    selectedPolicyFile = null;
     fileInput.value = '';
     
-    // Update UI
     uploadBox.classList.remove('has-file');
     fileInfo.style.display = 'none';
     uploadContent.querySelector('.btn-upload').style.display = 'inline-flex';
     uploadContent.querySelector('p').style.display = 'block';
     
     updateAnalyzeButton();
-    showNotification('File removed.', 'info');
+    showNotification('Policy file removed.', 'info');
+}
+
+function updateUploadBoxState() {
+    const uploadBox = document.getElementById('uploadBoxLegal');
+    const uploadContent = uploadBox.querySelector('.upload-content');
+    
+    if (selectedLegalFiles.length === 0) {
+        uploadBox.classList.remove('has-file');
+        uploadContent.querySelector('.btn-upload').style.display = 'inline-flex';
+        uploadContent.querySelector('p').style.display = 'block';
+    } else {
+        uploadBox.classList.add('has-file');
+        uploadContent.querySelector('.btn-upload').style.display = 'none';
+        uploadContent.querySelector('p').style.display = 'none';
+    }
 }
 
 function updateAnalyzeButton() {
     const analyzeBtn = document.getElementById('analyzeBtn');
-    const hasFiles = selectedFiles.file1 && selectedFiles.file2;
+    const hasLegalFiles = selectedLegalFiles.length > 0;
+    const hasPolicyFile = selectedPolicyFile !== null;
     
-    analyzeBtn.disabled = !hasFiles;
+    analyzeBtn.disabled = !hasLegalFiles || !hasPolicyFile;
     
-    if (hasFiles) {
+    if (hasLegalFiles && hasPolicyFile) {
         analyzeBtn.innerHTML = '<i class="fas fa-brain"></i><span>Start AI Analysis</span>';
+    } else if (!hasLegalFiles && !hasPolicyFile) {
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Legal Documents and Policy First</span>';
+    } else if (!hasLegalFiles) {
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Legal Documents First</span>';
     } else {
-        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Both Documents First</span>';
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Policy Document First</span>';
     }
 }
 
 async function startAnalysis() {
-    if (!selectedFiles.file1 || !selectedFiles.file2) {
-        showNotification('Please select both documents first.', 'warning');
+    if (selectedLegalFiles.length === 0 || !selectedPolicyFile) {
+        showNotification('Please select legal documents and policy document first.', 'warning');
         return;
     }
     
     try {
-        // Show loading state
         const analyzeBtn = document.getElementById('analyzeBtn');
         analyzeBtn.disabled = true;
         analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Starting Analysis...</span>';
         
-        // Prepare form data
         const formData = new FormData();
-        formData.append('document1', selectedFiles.file1);
-        formData.append('document2', selectedFiles.file2);
         
-        // Send analysis request
+        selectedLegalFiles.forEach(file => {
+            formData.append('legal_documents', file);
+        });
+        
+        formData.append('policy_document', selectedPolicyFile);
+        
         const response = await fetch(`${API_BASE_URL}/analyze`, {
             method: 'POST',
             body: formData
@@ -183,7 +255,6 @@ async function startAnalysis() {
         currentTaskId = data.task_id;
         analysisStartTime = new Date();
         
-        // Show results section and start polling
         showResultsSection();
         startPolling();
         
@@ -193,7 +264,6 @@ async function startAnalysis() {
         console.error('Analysis start error:', error);
         showNotification(`Failed to start analysis: ${error.message}`, 'error');
         
-        // Reset button
         const analyzeBtn = document.getElementById('analyzeBtn');
         analyzeBtn.disabled = false;
         updateAnalyzeButton();
@@ -206,19 +276,15 @@ function showResultsSection() {
     const resultsDisplay = document.getElementById('resultsDisplay');
     const errorDisplay = document.getElementById('errorDisplay');
     
-    // Show results section
     resultsSection.style.display = 'block';
     
-    // Show progress, hide others
     progressContainer.style.display = 'block';
     resultsDisplay.style.display = 'none';
     errorDisplay.style.display = 'none';
     
-    // Update task info
     document.getElementById('taskId').textContent = currentTaskId;
     document.getElementById('analysisTime').textContent = new Date().toLocaleString();
     
-    // Scroll to results
     resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -235,7 +301,7 @@ function startPolling() {
             clearInterval(pollInterval);
             showAnalysisError('Connection lost during analysis. Please refresh and try again.');
         }
-    }, 3000); // Poll every 3 seconds
+    }, 3000);
 }
 
 async function checkAnalysisStatus() {
@@ -267,7 +333,7 @@ function updateProgressDisplay(statusData) {
     const progressDetails = document.getElementById('progressDetails');
     const progressFill = document.getElementById('progressFill');
     
-    let progressPercentage = 20; // Default progress
+    let progressPercentage = 20;
     let phaseText = 'Processing...';
     let detailsText = 'AI is analyzing your documents...';
     
@@ -275,7 +341,6 @@ function updateProgressDisplay(statusData) {
         phaseText = statusData.progress.current_phase || phaseText;
         detailsText = statusData.progress.details || detailsText;
         
-        // Calculate progress based on phase
         if (phaseText.includes('Phase 1')) progressPercentage = 25;
         else if (phaseText.includes('Phase 2')) progressPercentage = 45;
         else if (phaseText.includes('Phase 3')) progressPercentage = 70;
@@ -293,16 +358,14 @@ function showAnalysisComplete(data) {
     const resultsDisplay = document.getElementById('resultsDisplay');
     const downloadBtn = document.getElementById('downloadBtn');
     
-    // Hide progress, show results
     progressContainer.style.display = 'none';
     resultsDisplay.style.display = 'block';
     
-    // Update summary cards
-    document.getElementById('documentsAnalyzed').textContent = '2 Documents Analyzed';
+    const totalDocs = selectedLegalFiles.length + 1;
+    document.getElementById('documentsAnalyzed').textContent = `${totalDocs} Documents Analyzed`;
     document.getElementById('complianceScore').textContent = 'Available in Report';
     document.getElementById('requirementsCount').textContent = 'Available in Report';
     
-    // Calculate and show analysis time
     if (analysisStartTime) {
         const completionTime = new Date();
         const duration = Math.round((completionTime - analysisStartTime) / 1000);
@@ -312,7 +375,6 @@ function showAnalysisComplete(data) {
             `${minutes}m ${seconds}s`;
     }
     
-    // Enable download button
     downloadBtn.disabled = false;
     
     showNotification('🎉 AI analysis completed! Your comprehensive report is ready.', 'success');
@@ -323,7 +385,6 @@ function showAnalysisError(errorMessage) {
     const errorDisplay = document.getElementById('errorDisplay');
     const errorMessageEl = document.getElementById('errorMessage');
     
-    // Hide progress, show error
     progressContainer.style.display = 'none';
     errorDisplay.style.display = 'block';
     
@@ -342,18 +403,15 @@ async function downloadReport() {
         const downloadBtn = document.getElementById('downloadBtn');
         const originalContent = downloadBtn.innerHTML;
         
-        // Show loading state
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing Download...</span>';
         
-        // Download the report
         const response = await fetch(`${API_BASE_URL}/download/${currentTaskId}`);
         
         if (!response.ok) {
             throw new Error('Failed to download report');
         }
         
-        // Create download link
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -364,7 +422,6 @@ async function downloadReport() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        // Restore button
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = originalContent;
         
@@ -374,7 +431,6 @@ async function downloadReport() {
         console.error('Download error:', error);
         showNotification(`Download failed: ${error.message}`, 'error');
         
-        // Restore button
         const downloadBtn = document.getElementById('downloadBtn');
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = '<i class="fas fa-download"></i><span>Download Report</span>';
@@ -382,30 +438,31 @@ async function downloadReport() {
 }
 
 function startNewAnalysis() {
-    // Reset everything
     currentTaskId = null;
     analysisStartTime = null;
-    selectedFiles = { file1: null, file2: null };
+    selectedLegalFiles = [];
+    selectedPolicyFile = null;
     
     if (pollInterval) {
         clearInterval(pollInterval);
         pollInterval = null;
     }
     
-    // Reset UI
     document.getElementById('results').style.display = 'none';
-    document.getElementById('file1').value = '';
-    document.getElementById('file2').value = '';
-    removeFile(1);
-    removeFile(2);
+    document.getElementById('legalFiles').value = '';
+    document.getElementById('policyFile').value = '';
     
-    // Scroll to upload section
+    const legalFilesInfo = document.getElementById('legalFilesInfo');
+    legalFilesInfo.innerHTML = '';
+    
+    removePolicyFile();
+    updateUploadBoxState();
+    
     scrollToUpload();
     
     showNotification('Ready for new analysis!', 'info');
 }
 
-// Navigation and scrolling functions
 function handleNavigation(event) {
     event.preventDefault();
     const targetId = event.target.getAttribute('href');
@@ -442,7 +499,6 @@ function scrollToUpload() {
     uploadSection.scrollIntoView({ behavior: 'smooth' });
 }
 
-// System status and info functions
 async function checkSystemStatus() {
     try {
         showModal('systemStatusModal');
@@ -571,7 +627,8 @@ function showHelp() {
         <div class="help-content">
             <h4>How to Use the AI Legal Compliance Analyzer:</h4>
             <ol style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Upload Documents:</strong> Select two PDF documents for analysis. The AI will automatically determine which is the regulatory document and which is the compliance target.</li>
+                <li><strong>Upload Legal Documents:</strong> Select one or more PDF documents containing legal requirements (laws, regulations, standards, etc.).</li>
+                <li><strong>Upload Policy Document:</strong> Select one PDF document containing the policy to be analyzed for compliance.</li>
                 <li><strong>Start Analysis:</strong> Click the "Start AI Analysis" button to begin the intelligent analysis process.</li>
                 <li><strong>Monitor Progress:</strong> Watch the real-time progress as the AI processes your documents through 5 intelligent phases.</li>
                 <li><strong>Download Report:</strong> Once complete, download your comprehensive compliance analysis report.</li>
@@ -583,6 +640,7 @@ function showHelp() {
                 <li>Use clear, well-structured documents for optimal analysis</li>
                 <li>Documents should be in English for best AI understanding</li>
                 <li>File size limit is 50MB per document</li>
+                <li>You can upload multiple legal documents to compare against one policy</li>
             </ul>
             
             <h4>AI Analysis Phases:</h4>
@@ -610,6 +668,7 @@ function showTechnicalInfo() {
                 <li><strong>Supported Formats:</strong> PDF documents</li>
                 <li><strong>File Size Limit:</strong> 50MB per document</li>
                 <li><strong>Processing Time:</strong> 3-7 minutes depending on complexity</li>
+                <li><strong>Multiple Documents:</strong> Supports multiple legal documents vs one policy</li>
                 <li><strong>Offline Capability:</strong> Runs completely offline once installed</li>
             </ul>
             
@@ -627,6 +686,7 @@ function showTechnicalInfo() {
                 <li>Adapts to any legal domain or jurisdiction</li>
                 <li>Learns from document context and structure</li>
                 <li>Provides intelligent, contextual recommendations</li>
+                <li>Handles multiple legal documents simultaneously</li>
                 <li>Continuously improves analysis quality</li>
             </ul>
         </div>
@@ -657,6 +717,7 @@ function showAbout() {
                 <li><strong>Universal Compatibility:</strong> Works with any document type</li>
                 <li><strong>Intelligent Understanding:</strong> True AI comprehension of legal content</li>
                 <li><strong>Dynamic Analysis:</strong> Adapts to any legal domain</li>
+                <li><strong>Multiple Document Support:</strong> Analyze multiple legal documents against policies</li>
                 <li><strong>Offline Operation:</strong> Complete privacy and security</li>
             </ul>
             
@@ -686,7 +747,6 @@ function showErrorDetails() {
         return;
     }
     
-    // This would typically fetch detailed error information
     const content = `
         <div class="error-details">
             <h4>Analysis Error Information:</h4>
@@ -716,7 +776,6 @@ function showErrorDetails() {
     showInfoModal('Error Details', content);
 }
 
-// Modal functions
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.classList.add('show');
@@ -732,7 +791,6 @@ function closeModal(modalId) {
 }
 
 function showInfoModal(title, content) {
-    // Create dynamic modal
     const modal = document.createElement('div');
     modal.className = 'modal show';
     modal.style.display = 'flex';
@@ -750,7 +808,6 @@ function showInfoModal(title, content) {
     
     document.body.appendChild(modal);
     
-    // Close on outside click
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.remove();
@@ -769,7 +826,6 @@ function handleModalClose(event) {
     }
 }
 
-// Utility functions
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -779,7 +835,6 @@ function formatFileSize(bytes) {
 }
 
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
@@ -792,7 +847,6 @@ function showNotification(message, type = 'info') {
         </button>
     `;
     
-    // Add styles
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -812,10 +866,8 @@ function showNotification(message, type = 'info') {
         gap: var(--space-3);
     `;
     
-    // Add to page
     document.body.appendChild(notification);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOutRight 0.3s ease';
@@ -833,7 +885,6 @@ function getNotificationIcon(type) {
     }
 }
 
-// Add notification animations to CSS
 const notificationStyles = document.createElement('style');
 notificationStyles.textContent = `
     @keyframes slideInRight {

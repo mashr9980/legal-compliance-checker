@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-content">
             <div class="loading-spinner"></div>
@@ -18,7 +17,6 @@
         </div>
     </div>
 
-    <!-- Header -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -41,9 +39,7 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main">
-        <!-- Hero Section -->
         <section id="home" class="hero">
             <div class="container">
                 <div class="hero-content">
@@ -85,7 +81,6 @@
             </div>
         </section>
 
-        <!-- Features Section -->
         <section id="features" class="features">
             <div class="container">
                 <div class="section-header">
@@ -139,7 +134,6 @@
             </div>
         </section>
 
-        <!-- How It Works Section -->
         <section id="how-it-works" class="how-it-works">
             <div class="container">
                 <div class="section-header">
@@ -186,32 +180,25 @@
             </div>
         </section>
 
-        <!-- Upload Section -->
         <section id="upload" class="upload-section">
             <div class="container">
                 <div class="upload-container">
                     <div class="upload-header">
                         <h2><i class="fas fa-cloud-upload-alt"></i> Start Your AI Analysis</h2>
-                        <p>Upload any two documents for intelligent compliance analysis</p>
+                        <p>Upload legal documents and policy for intelligent compliance analysis</p>
                     </div>
                     
                     <div class="upload-area">
-                        <div class="upload-box" id="uploadBox1">
+                        <div class="upload-box" id="uploadBoxLegal">
                             <div class="upload-content">
                                 <i class="fas fa-file-pdf"></i>
-                                <h3>Document 1</h3>
-                                <p>Upload any legal document (law, regulation, standard, policy, etc.)</p>
-                                <input type="file" id="file1" accept=".pdf" hidden>
-                                <button class="btn-upload" onclick="document.getElementById('file1').click()">
-                                    <i class="fas fa-plus"></i> Choose PDF
+                                <h3>Legal Documents</h3>
+                                <p>Upload legal documents (laws, regulations, standards, policies, etc.)</p>
+                                <input type="file" id="legalFiles" accept=".pdf" multiple hidden>
+                                <button class="btn-upload" onclick="document.getElementById('legalFiles').click()">
+                                    <i class="fas fa-plus"></i> Choose PDFs
                                 </button>
-                                <div class="file-info" id="file1Info" style="display: none;">
-                                    <i class="fas fa-file-pdf"></i>
-                                    <span class="file-name"></span>
-                                    <span class="file-size"></span>
-                                    <button class="btn-remove" onclick="removeFile(1)">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                <div class="file-info-container" id="legalFilesInfo">
                                 </div>
                             </div>
                         </div>
@@ -222,20 +209,20 @@
                             </div>
                         </div>
 
-                        <div class="upload-box" id="uploadBox2">
+                        <div class="upload-box" id="uploadBoxPolicy">
                             <div class="upload-content">
                                 <i class="fas fa-file-contract"></i>
-                                <h3>Document 2</h3>
-                                <p>Upload document to analyze (contract, policy, procedure, etc.)</p>
-                                <input type="file" id="file2" accept=".pdf" hidden>
-                                <button class="btn-upload" onclick="document.getElementById('file2').click()">
+                                <h3>Policy Document</h3>
+                                <p>Upload policy document to analyze (contract, policy, procedure, etc.)</p>
+                                <input type="file" id="policyFile" accept=".pdf" hidden>
+                                <button class="btn-upload" onclick="document.getElementById('policyFile').click()">
                                     <i class="fas fa-plus"></i> Choose PDF
                                 </button>
-                                <div class="file-info" id="file2Info" style="display: none;">
+                                <div class="file-info" id="policyFileInfo" style="display: none;">
                                     <i class="fas fa-file-contract"></i>
                                     <span class="file-name"></span>
                                     <span class="file-size"></span>
-                                    <button class="btn-remove" onclick="removeFile(2)">
+                                    <button class="btn-remove" onclick="removePolicyFile()">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
@@ -257,7 +244,6 @@
             </div>
         </section>
 
-        <!-- Results Section -->
         <section id="results" class="results-section" style="display: none;">
             <div class="container">
                 <div class="results-container">
@@ -269,7 +255,6 @@
                         </div>
                     </div>
 
-                    <!-- Progress Indicator -->
                     <div class="progress-container" id="progressContainer">
                         <div class="progress-header">
                             <h3><i class="fas fa-cogs"></i> <span id="progressTitle">Processing...</span></h3>
@@ -285,7 +270,6 @@
                         </div>
                     </div>
 
-                    <!-- Results Display -->
                     <div class="results-display" id="resultsDisplay" style="display: none;">
                         <div class="results-summary">
                             <div class="summary-card">
@@ -294,7 +278,7 @@
                                 </div>
                                 <div class="summary-content">
                                     <h4>Documents Analyzed</h4>
-                                    <p id="documentsAnalyzed">2 Documents</p>
+                                    <p id="documentsAnalyzed">Documents</p>
                                 </div>
                             </div>
                             <div class="summary-card">
@@ -338,7 +322,6 @@
                         </div>
                     </div>
 
-                    <!-- Error Display -->
                     <div class="error-display" id="errorDisplay" style="display: none;">
                         <div class="error-content">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -359,7 +342,6 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -389,7 +371,6 @@
         </div>
     </footer>
 
-    <!-- Modals -->
     <div id="systemStatusModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -410,12 +391,10 @@
                 <button class="modal-close" onclick="closeModal('errorDetailsModal')">&times;</button>
             </div>
             <div class="modal-body" id="errorDetailsContent">
-                <!-- Error details will be populated here -->
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="/static/script.js"></script>
 </body>
 </html>

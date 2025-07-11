@@ -18,14 +18,13 @@ import tempfile
 import traceback
 import json
 import logging
+from typing import List
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 executor = ThreadPoolExecutor(max_workers=4)
 
-# Global service instances
 document_processor = None
 compliance_engine = None
 report_generator = None
@@ -38,27 +37,21 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing AI Legal Compliance System...")
     
     try:
-        # Initialize LLM analyzer first
         llm_analyzer = IntelligentAnalyzer()
         await llm_analyzer.initialize()
         
-        # Initialize document processor with LLM capabilities
         document_processor = DocumentProcessor()
         document_processor.set_llm_analyzer(llm_analyzer)
         
-        # Initialize compliance engine
         compliance_engine = IntelligentComplianceEngine()
         
-        # Initialize report generator
         report_generator = IntelligentReportGenerator()
         
-        # Set up app state
         app.state.document_processor = document_processor
         app.state.compliance_engine = compliance_engine
         app.state.report_generator = report_generator
         app.state.llm_analyzer = llm_analyzer
         
-        # Ensure directories exist
         os.makedirs("temp_files", exist_ok=True)
         os.makedirs("reports", exist_ok=True)
         os.makedirs("static", exist_ok=True)
@@ -83,7 +76,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -92,18 +84,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get the directory where main.py is located
 BASE_DIR = Path(__file__).parent
 
-# Create static directory structure
 STATIC_DIR = BASE_DIR / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 
-# Write the frontend files to static directory
 def setup_frontend_files():
-    """Create the frontend files in the static directory"""
-    
-    # Create index.html
     index_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -115,7 +101,6 @@ def setup_frontend_files():
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-content">
             <div class="loading-spinner"></div>
@@ -124,7 +109,6 @@ def setup_frontend_files():
         </div>
     </div>
 
-    <!-- Header -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -147,9 +131,7 @@ def setup_frontend_files():
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main">
-        <!-- Hero Section -->
         <section id="home" class="hero">
             <div class="container">
                 <div class="hero-content">
@@ -191,7 +173,6 @@ def setup_frontend_files():
             </div>
         </section>
 
-        <!-- Features Section -->
         <section id="features" class="features">
             <div class="container">
                 <div class="section-header">
@@ -245,7 +226,6 @@ def setup_frontend_files():
             </div>
         </section>
 
-        <!-- How It Works Section -->
         <section id="how-it-works" class="how-it-works">
             <div class="container">
                 <div class="section-header">
@@ -292,32 +272,25 @@ def setup_frontend_files():
             </div>
         </section>
 
-        <!-- Upload Section -->
         <section id="upload" class="upload-section">
             <div class="container">
                 <div class="upload-container">
                     <div class="upload-header">
                         <h2><i class="fas fa-cloud-upload-alt"></i> Start Your AI Analysis</h2>
-                        <p>Upload any two documents for intelligent compliance analysis</p>
+                        <p>Upload legal documents and policy for intelligent compliance analysis</p>
                     </div>
                     
                     <div class="upload-area">
-                        <div class="upload-box" id="uploadBox1">
+                        <div class="upload-box" id="uploadBoxLegal">
                             <div class="upload-content">
                                 <i class="fas fa-file-pdf"></i>
-                                <h3>Document 1</h3>
-                                <p>Upload any legal document (law, regulation, standard, policy, etc.)</p>
-                                <input type="file" id="file1" accept=".pdf" hidden>
-                                <button class="btn-upload" onclick="document.getElementById('file1').click()">
-                                    <i class="fas fa-plus"></i> Choose PDF
+                                <h3>Legal Documents</h3>
+                                <p>Upload legal documents (laws, regulations, standards, policies, etc.)</p>
+                                <input type="file" id="legalFiles" accept=".pdf" multiple hidden>
+                                <button class="btn-upload" onclick="document.getElementById('legalFiles').click()">
+                                    <i class="fas fa-plus"></i> Choose PDFs
                                 </button>
-                                <div class="file-info" id="file1Info" style="display: none;">
-                                    <i class="fas fa-file-pdf"></i>
-                                    <span class="file-name"></span>
-                                    <span class="file-size"></span>
-                                    <button class="btn-remove" onclick="removeFile(1)">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                <div class="file-info-container" id="legalFilesInfo">
                                 </div>
                             </div>
                         </div>
@@ -328,20 +301,20 @@ def setup_frontend_files():
                             </div>
                         </div>
 
-                        <div class="upload-box" id="uploadBox2">
+                        <div class="upload-box" id="uploadBoxPolicy">
                             <div class="upload-content">
                                 <i class="fas fa-file-contract"></i>
-                                <h3>Document 2</h3>
-                                <p>Upload document to analyze (contract, policy, procedure, etc.)</p>
-                                <input type="file" id="file2" accept=".pdf" hidden>
-                                <button class="btn-upload" onclick="document.getElementById('file2').click()">
+                                <h3>Policy Document</h3>
+                                <p>Upload policy document to analyze (contract, policy, procedure, etc.)</p>
+                                <input type="file" id="policyFile" accept=".pdf" hidden>
+                                <button class="btn-upload" onclick="document.getElementById('policyFile').click()">
                                     <i class="fas fa-plus"></i> Choose PDF
                                 </button>
-                                <div class="file-info" id="file2Info" style="display: none;">
+                                <div class="file-info" id="policyFileInfo" style="display: none;">
                                     <i class="fas fa-file-contract"></i>
                                     <span class="file-name"></span>
                                     <span class="file-size"></span>
-                                    <button class="btn-remove" onclick="removeFile(2)">
+                                    <button class="btn-remove" onclick="removePolicyFile()">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
@@ -363,7 +336,6 @@ def setup_frontend_files():
             </div>
         </section>
 
-        <!-- Results Section -->
         <section id="results" class="results-section" style="display: none;">
             <div class="container">
                 <div class="results-container">
@@ -375,7 +347,6 @@ def setup_frontend_files():
                         </div>
                     </div>
 
-                    <!-- Progress Indicator -->
                     <div class="progress-container" id="progressContainer">
                         <div class="progress-header">
                             <h3><i class="fas fa-cogs"></i> <span id="progressTitle">Processing...</span></h3>
@@ -391,7 +362,6 @@ def setup_frontend_files():
                         </div>
                     </div>
 
-                    <!-- Results Display -->
                     <div class="results-display" id="resultsDisplay" style="display: none;">
                         <div class="results-summary">
                             <div class="summary-card">
@@ -400,7 +370,7 @@ def setup_frontend_files():
                                 </div>
                                 <div class="summary-content">
                                     <h4>Documents Analyzed</h4>
-                                    <p id="documentsAnalyzed">2 Documents</p>
+                                    <p id="documentsAnalyzed">Documents</p>
                                 </div>
                             </div>
                             <div class="summary-card">
@@ -444,7 +414,6 @@ def setup_frontend_files():
                         </div>
                     </div>
 
-                    <!-- Error Display -->
                     <div class="error-display" id="errorDisplay" style="display: none;">
                         <div class="error-content">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -465,7 +434,6 @@ def setup_frontend_files():
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -495,7 +463,6 @@ def setup_frontend_files():
         </div>
     </footer>
 
-    <!-- Modals -->
     <div id="systemStatusModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -516,12 +483,10 @@ def setup_frontend_files():
                 <button class="modal-close" onclick="closeModal('errorDetailsModal')">&times;</button>
             </div>
             <div class="modal-body" id="errorDetailsContent">
-                <!-- Error details will be populated here -->
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="/static/script.js"></script>
 </body>
 </html>'''
@@ -529,16 +494,12 @@ def setup_frontend_files():
     with open(STATIC_DIR / "index.html", "w", encoding="utf-8") as f:
         f.write(index_html)
 
-# Setup frontend files on startup
 setup_frontend_files()
 
-# Mount static files
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# Serve the main frontend page
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
-    """Serve the main frontend application"""
     index_file = STATIC_DIR / "index.html"
     
     if index_file.exists():
@@ -553,7 +514,6 @@ async def serve_frontend():
         return HTMLResponse(content=get_fallback_html(), status_code=200)
 
 def get_fallback_html():
-    """Fallback HTML when frontend files are not found"""
     return """
     <!DOCTYPE html>
     <html lang="en">
@@ -606,7 +566,6 @@ def get_fallback_html():
 
 @app.get("/health")
 async def health_check():
-    """System health check endpoint"""
     return {
         "status": "healthy", 
         "system": "AI Legal Compliance Analysis System",
@@ -630,7 +589,6 @@ async def health_check():
 
 @app.get("/capabilities")
 async def get_capabilities():
-    """Get system capabilities"""
     return {
         "ai_intelligence": {
             "document_understanding": "Automatic detection of any document type",
@@ -657,7 +615,6 @@ async def get_capabilities():
 
 @app.get("/supported-document-types")
 async def get_supported_document_types():
-    """Get supported document types"""
     return {
         "regulatory_documents": {
             "laws": ["Federal Laws", "State Laws", "Local Ordinances", "Constitutional Provisions"],
@@ -677,37 +634,44 @@ async def get_supported_document_types():
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_documents(
     background_tasks: BackgroundTasks,
-    document1: UploadFile = File(..., description="First document for analysis"),
-    document2: UploadFile = File(..., description="Second document for analysis")
+    legal_documents: List[UploadFile] = File(..., description="Legal documents for analysis"),
+    policy_document: UploadFile = File(..., description="Policy document for analysis")
 ):
-    """Universal document compliance analysis"""
+    if not legal_documents or len(legal_documents) == 0:
+        raise HTTPException(status_code=400, detail="At least one legal document must be uploaded")
     
-    # Validate file formats
-    if not all(doc.filename.endswith('.pdf') for doc in [document1, document2]):
-        raise HTTPException(status_code=400, detail="Both files must be PDF format")
+    if not policy_document:
+        raise HTTPException(status_code=400, detail="Policy document must be uploaded")
     
-    if document1.filename == document2.filename:
-        raise HTTPException(status_code=400, detail="Please upload different documents for analysis")
+    for doc in legal_documents:
+        if not doc.filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail=f"All files must be PDF format. Invalid file: {doc.filename}")
+    
+    if not policy_document.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Policy document must be PDF format")
     
     task_id = str(uuid.uuid4())
     logger.info(f"Starting analysis task: {task_id}")
     
     try:
-        # Save uploaded files temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_doc1:
-            doc1_content = await document1.read()
-            temp_doc1.write(doc1_content)
-            doc1_path = temp_doc1.name
+        legal_doc_paths = []
+        legal_doc_names = []
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_doc2:
-            doc2_content = await document2.read()
-            temp_doc2.write(doc2_content)
-            doc2_path = temp_doc2.name
+        for doc in legal_documents:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                doc_content = await doc.read()
+                temp_file.write(doc_content)
+                legal_doc_paths.append(temp_file.name)
+                legal_doc_names.append(doc.filename)
         
-        # Start analysis pipeline
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_policy:
+            policy_content = await policy_document.read()
+            temp_policy.write(policy_content)
+            policy_path = temp_policy.name
+        
         background_tasks.add_task(
             analysis_pipeline,
-            task_id, doc1_path, doc2_path, document1.filename, document2.filename
+            task_id, legal_doc_paths, policy_path, legal_doc_names, policy_document.filename
         )
         
         return AnalysisResponse(
@@ -722,12 +686,10 @@ async def analyze_documents(
 
 @app.get("/status/{task_id}")
 async def get_analysis_status(task_id: str):
-    """Check analysis task status"""
     report_path = f"reports/{task_id}.pdf"
     error_path = f"reports/{task_id}.error"
     progress_path = f"reports/{task_id}.progress"
     
-    # Check for completion
     if os.path.exists(report_path):
         file_size = os.path.getsize(report_path)
         return {
@@ -738,7 +700,6 @@ async def get_analysis_status(task_id: str):
             "download_ready": True
         }
     
-    # Check for errors
     elif os.path.exists(error_path):
         with open(error_path, 'r') as f:
             error_msg = f.read()
@@ -750,7 +711,6 @@ async def get_analysis_status(task_id: str):
             "download_ready": False
         }
     
-    # Check for progress
     elif os.path.exists(progress_path):
         try:
             with open(progress_path, 'r') as f:
@@ -765,7 +725,6 @@ async def get_analysis_status(task_id: str):
         except:
             pass
     
-    # Default processing status
     return {
         "status": "processing", 
         "task_id": task_id,
@@ -775,7 +734,6 @@ async def get_analysis_status(task_id: str):
 
 @app.get("/download/{task_id}")
 async def download_report(task_id: str):
-    """Download analysis report"""
     report_path = f"reports/{task_id}.pdf"
     if not os.path.exists(report_path):
         raise HTTPException(status_code=404, detail="Report not found or still processing")
@@ -786,15 +744,13 @@ async def download_report(task_id: str):
         media_type="application/pdf"
     )
 
-async def analysis_pipeline(task_id: str, doc1_path: str, doc2_path: str, 
-                          doc1_filename: str, doc2_filename: str):
-    """AI-driven analysis pipeline"""
+async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_path: str, 
+                          legal_doc_names: List[str], policy_filename: str):
     loop = asyncio.get_event_loop()
     error_path = f"reports/{task_id}.error"
     progress_path = f"reports/{task_id}.progress"
     
     async def update_progress(phase: str, details: str):
-        """Update progress information"""
         progress_info = {
             "current_phase": phase,
             "details": details,
@@ -809,41 +765,45 @@ async def analysis_pipeline(task_id: str, doc1_path: str, doc2_path: str,
     try:
         logger.info(f"Starting analysis pipeline for task: {task_id}")
         
-        # Phase 1: Document Processing
         await update_progress("Phase 1: Document Processing", "Extracting and analyzing document content")
         
-        doc1_extraction = await document_processor.intelligent_extract_text(doc1_path)
-        doc2_extraction = await document_processor.intelligent_extract_text(doc2_path)
+        legal_texts = []
+        for i, doc_path in enumerate(legal_doc_paths):
+            extraction = await document_processor.intelligent_extract_text(doc_path)
+            text = extraction["extracted_text"]
+            
+            if len(text) < 200:
+                raise Exception(f"Legal document {i+1} ({legal_doc_names[i]}) contains insufficient readable text")
+            
+            legal_texts.append(text)
         
-        doc1_text = doc1_extraction["extracted_text"]
-        doc2_text = doc2_extraction["extracted_text"]
+        policy_extraction = await document_processor.intelligent_extract_text(policy_path)
+        policy_text = policy_extraction["extracted_text"]
         
-        if len(doc1_text) < 200:
-            raise Exception(f"Document 1 ({doc1_filename}) contains insufficient readable text")
+        if len(policy_text) < 200:
+            raise Exception(f"Policy document ({policy_filename}) contains insufficient readable text")
         
-        if len(doc2_text) < 200:
-            raise Exception(f"Document 2 ({doc2_filename}) contains insufficient readable text")
+        combined_legal_text = "\n\n--- DOCUMENT SEPARATOR ---\n\n".join(legal_texts)
         
-        # Phase 2: Document Understanding
         await update_progress("Phase 2: Document Understanding", "AI analyzing document types and content")
-        analysis_context = await compliance_engine.analyze_documents(doc1_text, doc2_text)
+        analysis_context = await compliance_engine.analyze_documents(combined_legal_text, policy_text)
         
-        # Phase 3: Compliance Analysis
         await update_progress("Phase 3: Compliance Analysis", "Extracting requirements and checking compliance")
         policy_checklist = await compliance_engine.generate_intelligent_checklist(
-            doc1_text, doc2_text, analysis_context
+            combined_legal_text, policy_text, analysis_context
         )
         
-        # Phase 4: Report Generation
         await update_progress("Phase 4: Report Generation", "Creating comprehensive analysis report")
         report_path = f"reports/{task_id}.pdf"
+        
+        legal_docs_summary = f"{len(legal_doc_names)} Legal Documents: {', '.join(legal_doc_names)}"
         
         await loop.run_in_executor(
             executor,
             report_generator.generate_intelligent_report,
             policy_checklist,
-            doc1_filename,
-            doc2_filename,
+            legal_docs_summary,
+            policy_filename,
             report_path
         )
         
@@ -860,12 +820,12 @@ async def analysis_pipeline(task_id: str, doc1_path: str, doc2_path: str,
             logger.error(f"Could not write error file: {write_error}")
         
     finally:
-        # Cleanup
         try:
-            if os.path.exists(doc1_path):
-                os.unlink(doc1_path)
-            if os.path.exists(doc2_path):
-                os.unlink(doc2_path)
+            for doc_path in legal_doc_paths:
+                if os.path.exists(doc_path):
+                    os.unlink(doc_path)
+            if os.path.exists(policy_path):
+                os.unlink(policy_path)
             if os.path.exists(progress_path):
                 os.unlink(progress_path)
         except Exception as cleanup_error:
