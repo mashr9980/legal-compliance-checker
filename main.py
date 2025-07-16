@@ -34,7 +34,7 @@ llm_analyzer = None
 async def lifespan(app: FastAPI):
     global document_processor, compliance_engine, report_generator, llm_analyzer
     
-    logger.info("Initializing AI Legal Compliance System...")
+    logger.info("Initializing RAIA - Rewards AI Assistant System...")
     
     try:
         llm_analyzer = IntelligentAnalyzer()
@@ -70,8 +70,8 @@ async def lifespan(app: FastAPI):
         executor.shutdown(wait=True)
 
 app = FastAPI(
-    title="AI Legal Compliance Analysis System",
-    description="AI-Powered Universal Document Compliance Checker",
+    title="RAIA - Rewards AI Assistant",
+    description="AI-Powered Rewards Analysis and Compensation Intelligence",
     version="4.0.0",
     lifespan=lifespan
 )
@@ -95,7 +95,7 @@ def setup_frontend_files():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Legal Compliance Analyzer</title>
+    <title>RAIA - Rewards AI Assistant</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -104,8 +104,8 @@ def setup_frontend_files():
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <h2>Initializing AI Legal Compliance System</h2>
-            <p>Preparing intelligent document analysis...</p>
+            <h2>Initializing RAIA - Rewards AI Assistant</h2>
+            <p>Preparing intelligent rewards analysis...</p>
         </div>
     </div>
 
@@ -114,7 +114,7 @@ def setup_frontend_files():
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-brain"></i>
-                    <span>AI Legal Compliance</span>
+                    <span>RAIA - Rewards AI Assistant</span>
                 </div>
                 <nav class="nav">
                     <a href="#home" class="nav-link active">Home</a>
@@ -136,24 +136,24 @@ def setup_frontend_files():
             <div class="container">
                 <div class="hero-content">
                     <div class="hero-text">
-                        <h1>100% AI-Powered Legal Compliance Analysis</h1>
-                        <p class="hero-subtitle">Revolutionary artificial intelligence that automatically detects document types, extracts requirements, and performs comprehensive compliance analysis without any hardcoded rules.</p>
+                        <h1>100% AI-Powered Rewards Analysis</h1>
+                        <p class="hero-subtitle">Meet RAIA — your smart assistant for Total Rewards. It intelligently analyzes policies, detects key compensation elements, and delivers deep insights without predefined templates.</p>
                         <div class="hero-features">
                             <div class="feature-item">
                                 <i class="fas fa-robot"></i>
-                                <span>Zero Hardcoded Requirements</span>
+                                <span>Fully Adaptive to Any Rewards Policy</span>
                             </div>
                             <div class="feature-item">
                                 <i class="fas fa-magic"></i>
-                                <span>Universal Document Support</span>
+                                <span>Compatible with All Compensation Documents</span>
                             </div>
                             <div class="feature-item">
                                 <i class="fas fa-lightning-bolt"></i>
-                                <span>Intelligent Analysis</span>
+                                <span>Insightful, Context-Aware Rewards Evaluation</span>
                             </div>
                         </div>
                         <button class="btn-primary hero-cta" onclick="scrollToUpload()">
-                            <i class="fas fa-rocket"></i> Start AI Analysis
+                            <i class="fas fa-rocket"></i> Start Rewards Evaluation
                         </button>
                     </div>
                     <div class="hero-visual">
@@ -176,51 +176,51 @@ def setup_frontend_files():
         <section id="features" class="features">
             <div class="container">
                 <div class="section-header">
-                    <h2>Revolutionary AI Capabilities</h2>
-                    <p>Advanced artificial intelligence that understands any legal document</p>
+                    <h2>RAIA's Smart Capabilities</h2>
+                    <p>Advanced AI tailored to understand any rewards, compensation, or benefits document</p>
                 </div>
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-eye"></i>
                         </div>
-                        <h3>Intelligent Document Detection</h3>
-                        <p>Automatically identifies document types, purposes, and structures using advanced AI analysis.</p>
+                        <h3>Smart Policy Detection</h3>
+                        <p>Recognizes salary structures, incentive plans, and benefits from diverse document formats.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-search-plus"></i>
                         </div>
-                        <h3>Dynamic Requirement Extraction</h3>
-                        <p>Extracts specific, actionable requirements from any legal or regulatory document without predefined rules.</p>
+                        <h3>Dynamic Rewards Identification</h3>
+                        <p>Pinpoints key reward elements like base pay, bonuses, equity grants, and allowances.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-balance-scale"></i>
                         </div>
-                        <h3>Adaptive Compliance Analysis</h3>
-                        <p>Performs intelligent compliance checking that adapts to any domain, jurisdiction, or document type.</p>
+                        <h3>Flexible Rewards Evaluation</h3>
+                        <p>Adapts to multiple frameworks, job families, grades, markets, and internal reward policies.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
-                        <h3>Strategic Insights</h3>
-                        <p>Generates comprehensive assessments, risk evaluations, and strategic recommendations.</p>
+                        <h3>Actionable Rewards Insights</h3>
+                        <p>Provides deep analytics on fairness, competitiveness, and alignment with strategy.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-globe"></i>
                         </div>
-                        <h3>Universal Compatibility</h3>
-                        <p>Works with any document type: laws, contracts, policies, regulations, standards, and agreements.</p>
+                        <h3>Supports All Reward Formats</h3>
+                        <p>Works with any document — salary guides, HR policies, bonus plans, or benefits handbooks.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-shield-alt"></i>
                         </div>
-                        <h3>Professional Grade</h3>
-                        <p>Enterprise-level accuracy and reliability with comprehensive reporting and audit trails.</p>
+                        <h3>Enterprise-Level Confidence</h3>
+                        <p>Precision-level analysis with full traceability, ideal for audits and executive reviews.</p>
                     </div>
                 </div>
             </div>
@@ -229,43 +229,43 @@ def setup_frontend_files():
         <section id="how-it-works" class="how-it-works">
             <div class="container">
                 <div class="section-header">
-                    <h2>How AI Analysis Works</h2>
-                    <p>5-phase intelligent analysis powered by advanced AI</p>
+                    <h2>How RAIA Analysis Works</h2>
+                    <p>5-Phase Smart Evaluation for Rewards Strategy Optimization</p>
                 </div>
                 <div class="process-steps">
                     <div class="step">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <h3><i class="fas fa-file-search"></i> Document Understanding</h3>
-                            <p>AI analyzes document structure, content, and purpose to understand what you're working with.</p>
+                            <h3><i class="fas fa-file-search"></i> Policy Recognition</h3>
+                            <p>RAIA understands document types and compensation-related structures to define what's being assessed.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <h3><i class="fas fa-route"></i> Strategy Selection</h3>
-                            <p>Determines the optimal analysis approach based on document types and relationships.</p>
+                            <h3><i class="fas fa-route"></i> Reward Framework Mapping</h3>
+                            <p>Identifies the ideal evaluation method based on compensation elements, policy types, and industry practices.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h3><i class="fas fa-tasks"></i> Requirement Extraction</h3>
-                            <p>Dynamically extracts specific requirements, obligations, and compliance criteria.</p>
+                            <h3><i class="fas fa-tasks"></i> Rewards Component Extraction</h3>
+                            <p>Extracts salary bands, bonus structures, allowances, benefits, and key compliance indicators.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">4</div>
                         <div class="step-content">
-                            <h3><i class="fas fa-check-double"></i> Compliance Analysis</h3>
-                            <p>Performs detailed compliance checking with evidence gathering and gap analysis.</p>
+                            <h3><i class="fas fa-check-double"></i> Equity & Benchmark Analysis</h3>
+                            <p>Checks internal consistency, equity, and alignment with benchmarking data or internal grading systems.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">5</div>
                         <div class="step-content">
-                            <h3><i class="fas fa-chart-pie"></i> Strategic Reporting</h3>
-                            <p>Generates comprehensive reports with insights, recommendations, and action plans.</p>
+                            <h3><i class="fas fa-chart-pie"></i> Rewards Insights & Actions</h3>
+                            <p>Delivers clear insights, red flags, and recommended optimizations to support better decisions.</p>
                         </div>
                     </div>
                 </div>
@@ -276,16 +276,16 @@ def setup_frontend_files():
             <div class="container">
                 <div class="upload-container">
                     <div class="upload-header">
-                        <h2><i class="fas fa-cloud-upload-alt"></i> Start Your AI Analysis</h2>
-                        <p>Upload legal documents and policy for intelligent compliance analysis</p>
+                        <h2><i class="fas fa-cloud-upload-alt"></i> Start Your Rewards Analysis</h2>
+                        <p>Upload reward policies and compensation documents for intelligent analysis</p>
                     </div>
                     
                     <div class="upload-area">
                         <div class="upload-box" id="uploadBoxLegal">
                             <div class="upload-content">
                                 <i class="fas fa-file-pdf"></i>
-                                <h3>Legal Documents</h3>
-                                <p>Upload legal documents (laws, regulations, standards, policies, etc.)</p>
+                                <h3>Reward Framework Documents</h3>
+                                <p>Upload reward policies (salary guides, bonus plans, benefits handbooks, etc.)</p>
                                 <input type="file" id="legalFiles" accept=".pdf" multiple hidden>
                                 <button class="btn-upload" onclick="document.getElementById('legalFiles').click()">
                                     <i class="fas fa-plus"></i> Choose PDFs
@@ -304,8 +304,8 @@ def setup_frontend_files():
                         <div class="upload-box" id="uploadBoxPolicy">
                             <div class="upload-content">
                                 <i class="fas fa-file-contract"></i>
-                                <h3>Policy Document</h3>
-                                <p>Upload policy document to analyze (contract, policy, procedure, etc.)</p>
+                                <h3>Compensation Document</h3>
+                                <p>Upload compensation document to analyze (employee contract, pay structure, etc.)</p>
                                 <input type="file" id="policyFile" accept=".pdf" hidden>
                                 <button class="btn-upload" onclick="document.getElementById('policyFile').click()">
                                     <i class="fas fa-plus"></i> Choose PDF
@@ -325,11 +325,11 @@ def setup_frontend_files():
                     <div class="analysis-controls">
                         <button class="btn-analyze" id="analyzeBtn" onclick="startAnalysis()" disabled>
                             <i class="fas fa-brain"></i>
-                            <span>Start AI Analysis</span>
+                            <span>Start Rewards Analysis</span>
                         </button>
                         <p class="analysis-note">
                             <i class="fas fa-info-circle"></i>
-                            AI will automatically detect document types and determine optimal analysis strategy
+                            RAIA will automatically detect document types and determine optimal analysis strategy
                         </p>
                     </div>
                 </div>
@@ -340,7 +340,7 @@ def setup_frontend_files():
             <div class="container">
                 <div class="results-container">
                     <div class="results-header">
-                        <h2><i class="fas fa-chart-line"></i> Analysis Results</h2>
+                        <h2><i class="fas fa-chart-line"></i> Rewards Analysis Results</h2>
                         <div class="results-meta">
                             <span class="task-id">Task ID: <span id="taskId"></span></span>
                             <span class="analysis-time">Started: <span id="analysisTime"></span></span>
@@ -358,7 +358,7 @@ def setup_frontend_files():
                             <div class="progress-fill" id="progressFill"></div>
                         </div>
                         <div class="progress-details" id="progressDetails">
-                            AI is analyzing your documents...
+                            RAIA is analyzing your rewards documents...
                         </div>
                     </div>
 
@@ -378,7 +378,7 @@ def setup_frontend_files():
                                     <i class="fas fa-percentage"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h4>Compliance Score</h4>
+                                    <h4>Rewards Alignment Score</h4>
                                     <p id="complianceScore">--</p>
                                 </div>
                             </div>
@@ -387,7 +387,7 @@ def setup_frontend_files():
                                     <i class="fas fa-tasks"></i>
                                 </div>
                                 <div class="summary-content">
-                                    <h4>Requirements Analyzed</h4>
+                                    <h4>Components Analyzed</h4>
                                     <p id="requirementsCount">--</p>
                                 </div>
                             </div>
@@ -405,7 +405,7 @@ def setup_frontend_files():
                         <div class="results-actions">
                             <button class="btn-download" id="downloadBtn" onclick="downloadReport()" disabled>
                                 <i class="fas fa-download"></i>
-                                <span>Download Comprehensive Report</span>
+                                <span>Download Rewards Analysis Report</span>
                             </button>
                             <button class="btn-secondary" onclick="startNewAnalysis()">
                                 <i class="fas fa-plus"></i>
@@ -440,9 +440,9 @@ def setup_frontend_files():
                 <div class="footer-info">
                     <div class="logo">
                         <i class="fas fa-brain"></i>
-                        <span>AI Legal Compliance</span>
+                        <span>RAIA - Rewards AI Assistant</span>
                     </div>
-                    <p>Powered by advanced artificial intelligence for intelligent legal document analysis.</p>
+                    <p>Powered by advanced artificial intelligence for intelligent rewards and compensation analysis.</p>
                 </div>
                 <div class="footer-links">
                     <h4>System</h4>
@@ -458,7 +458,7 @@ def setup_frontend_files():
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 AI Legal Compliance System. Advanced AI Technology.</p>
+                <p>&copy; 2024 RAIA - Rewards AI Assistant. Advanced AI Technology.</p>
             </div>
         </div>
     </footer>
@@ -520,11 +520,11 @@ def get_fallback_html():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AI Legal Compliance Analyzer</title>
+        <title>RAIA - Rewards AI Assistant</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
             .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            h1 { color: #2563eb; text-align: center; }
+            h1 { color: #005C4D; text-align: center; }
             .status { background: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
             .endpoint { background: #f8fafc; padding: 15px; margin: 10px 0; border-radius: 5px; }
             .endpoint code { background: #e2e8f0; padding: 5px; border-radius: 3px; }
@@ -532,7 +532,7 @@ def get_fallback_html():
     </head>
     <body>
         <div class="container">
-            <h1>AI Legal Compliance Analyzer</h1>
+            <h1>RAIA - Rewards AI Assistant</h1>
             <div class="status">
                 <h2>System Status: Running</h2>
                 <p>The backend system is operational. Frontend files not found - please add your frontend implementation to the 'static' directory.</p>
@@ -568,15 +568,15 @@ def get_fallback_html():
 async def health_check():
     return {
         "status": "healthy", 
-        "system": "AI Legal Compliance Analysis System",
+        "system": "RAIA - Rewards AI Assistant",
         "version": "4.0.0",
         "ai_powered": True,
         "capabilities": [
-            "Universal document type detection",
-            "Dynamic requirement extraction",
-            "Intelligent compliance analysis",
-            "AI-driven recommendations",
-            "Adaptive document processing"
+            "Smart policy detection and recognition",
+            "Dynamic rewards identification",
+            "Flexible rewards evaluation",
+            "Equity and benchmark analysis",
+            "Actionable rewards insights"
         ],
         "endpoints": {
             "frontend": "/",
@@ -591,24 +591,24 @@ async def health_check():
 async def get_capabilities():
     return {
         "ai_intelligence": {
-            "document_understanding": "Automatic detection of any document type",
-            "requirement_extraction": "Dynamic extraction from any legal/regulatory document", 
-            "compliance_analysis": "Intelligent assessment against any standard",
-            "gap_identification": "AI-powered gap analysis and recommendations"
+            "document_understanding": "Automatic detection of any compensation document type",
+            "rewards_extraction": "Dynamic extraction from any rewards/benefits document", 
+            "equity_analysis": "Intelligent assessment of compensation fairness",
+            "benchmark_identification": "AI-powered benchmarking and market analysis"
         },
         "analysis_features": [
-            "Dynamic requirement extraction",
-            "Intelligent document type detection",
-            "Adaptive compliance checking", 
-            "AI-powered gap analysis",
-            "Smart recommendation generation",
-            "Context-aware risk assessment"
+            "Smart policy detection",
+            "Dynamic rewards identification", 
+            "Flexible rewards evaluation",
+            "Equity and benchmark analysis",
+            "Actionable rewards insights",
+            "Context-aware compensation assessment"
         ],
         "ai_capabilities": [
             "Zero hardcoded rules or templates",
-            "Universal document compatibility",
-            "Contextual understanding",
-            "Intelligent reasoning",
+            "Universal compensation document compatibility",
+            "Contextual understanding of rewards",
+            "Intelligent reasoning for fairness",
             "Adaptive analysis strategies"
         ]
     }
@@ -616,42 +616,42 @@ async def get_capabilities():
 @app.get("/supported-document-types")
 async def get_supported_document_types():
     return {
-        "regulatory_documents": {
-            "laws": ["Federal Laws", "State Laws", "Local Ordinances", "Constitutional Provisions"],
-            "regulations": ["Federal Regulations", "Industry Standards", "Professional Guidelines", "Compliance Frameworks"],
-            "policies": ["Government Policies", "Institutional Policies", "Organizational Standards", "Best Practices"],
-            "standards": ["ISO Standards", "Industry Standards", "Technical Specifications", "Quality Standards"]
+        "rewards_documents": {
+            "salary_guides": ["Salary Bands", "Pay Scales", "Grade Structures", "Compensation Frameworks"],
+            "bonus_plans": ["Incentive Plans", "Performance Bonuses", "Variable Pay", "Commission Structures"],
+            "benefits": ["Benefits Handbooks", "Benefit Summaries", "Pension Plans", "Health Insurance"],
+            "equity_plans": ["Stock Options", "Equity Grants", "Share Plans", "Long-term Incentives"]
         },
-        "compliance_documents": {
-            "contracts": ["Employment Contracts", "Service Agreements", "Purchase Agreements", "Partnership Agreements"],
-            "policies": ["Company Policies", "HR Policies", "Security Policies", "Operational Procedures"],
-            "procedures": ["Standard Operating Procedures", "Implementation Guidelines", "Process Documentation"],
-            "agreements": ["Terms of Service", "Privacy Policies", "License Agreements", "Compliance Documents"]
+        "compensation_documents": {
+            "contracts": ["Employment Contracts", "Executive Agreements", "Offer Letters", "Compensation Letters"],
+            "policies": ["HR Policies", "Compensation Policies", "Reward Policies", "Pay Equity Policies"],
+            "benchmarks": ["Market Data", "Survey Results", "Benchmark Reports", "Peer Comparisons"],
+            "structures": ["Job Families", "Career Ladders", "Grading Systems", "Leveling Guides"]
         },
-        "analysis_note": "AI automatically detects document types and adapts analysis accordingly. No predefined templates required."
+        "analysis_note": "RAIA automatically detects document types and adapts analysis accordingly. No predefined templates required."
     }
 
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_documents(
     background_tasks: BackgroundTasks,
-    legal_documents: List[UploadFile] = File(..., description="Legal documents for analysis"),
-    policy_document: UploadFile = File(..., description="Policy document for analysis")
+    legal_documents: List[UploadFile] = File(..., description="Reward framework documents for analysis"),
+    policy_document: UploadFile = File(..., description="Compensation document for analysis")
 ):
     if not legal_documents or len(legal_documents) == 0:
-        raise HTTPException(status_code=400, detail="At least one legal document must be uploaded")
+        raise HTTPException(status_code=400, detail="At least one reward framework document must be uploaded")
     
     if not policy_document:
-        raise HTTPException(status_code=400, detail="Policy document must be uploaded")
+        raise HTTPException(status_code=400, detail="Compensation document must be uploaded")
     
     for doc in legal_documents:
         if not doc.filename.endswith('.pdf'):
             raise HTTPException(status_code=400, detail=f"All files must be PDF format. Invalid file: {doc.filename}")
     
     if not policy_document.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Policy document must be PDF format")
+        raise HTTPException(status_code=400, detail="Compensation document must be PDF format")
     
     task_id = str(uuid.uuid4())
-    logger.info(f"Starting analysis task: {task_id}")
+    logger.info(f"Starting rewards analysis task: {task_id}")
     
     try:
         legal_doc_paths = []
@@ -677,7 +677,7 @@ async def analyze_documents(
         return AnalysisResponse(
             task_id=task_id,
             status="processing",
-            message="AI-powered document analysis started. Processing time: 3-7 minutes depending on document complexity."
+            message="AI-powered rewards analysis started. Processing time: 3-7 minutes depending on document complexity."
         )
         
     except Exception as e:
@@ -696,7 +696,7 @@ async def get_analysis_status(task_id: str):
             "status": "completed", 
             "task_id": task_id,
             "report_size": file_size,
-            "message": "Analysis completed successfully",
+            "message": "Rewards analysis completed successfully",
             "download_ready": True
         }
     
@@ -740,7 +740,7 @@ async def download_report(task_id: str):
     
     return FileResponse(
         path=report_path,
-        filename=f"compliance_analysis_{task_id}.pdf",
+        filename=f"rewards_analysis_{task_id}.pdf",
         media_type="application/pdf"
     )
 
@@ -763,7 +763,7 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             logger.warning(f"Could not update progress: {e}")
     
     try:
-        logger.info(f"Starting analysis pipeline for task: {task_id}")
+        logger.info(f"Starting rewards analysis pipeline for task: {task_id}")
         
         await update_progress("Phase 1: Document Processing", "Extracting and analyzing document content")
         
@@ -773,7 +773,7 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             text = extraction["extracted_text"]
             
             if len(text) < 200:
-                raise Exception(f"Legal document {i+1} ({legal_doc_names[i]}) contains insufficient readable text")
+                raise Exception(f"Reward framework document {i+1} ({legal_doc_names[i]}) contains insufficient readable text")
             
             legal_texts.append(text)
         
@@ -781,22 +781,22 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
         policy_text = policy_extraction["extracted_text"]
         
         if len(policy_text) < 200:
-            raise Exception(f"Policy document ({policy_filename}) contains insufficient readable text")
+            raise Exception(f"Compensation document ({policy_filename}) contains insufficient readable text")
         
         combined_legal_text = "\n\n--- DOCUMENT SEPARATOR ---\n\n".join(legal_texts)
         
-        await update_progress("Phase 2: Document Understanding", "AI analyzing document types and content")
+        await update_progress("Phase 2: Document Understanding", "RAIA analyzing document types and content")
         analysis_context = await compliance_engine.analyze_documents(combined_legal_text, policy_text)
         
-        await update_progress("Phase 3: Compliance Analysis", "Extracting requirements and checking compliance")
+        await update_progress("Phase 3: Rewards Analysis", "Extracting components and checking alignment")
         policy_checklist = await compliance_engine.generate_intelligent_checklist(
             combined_legal_text, policy_text, analysis_context
         )
         
-        await update_progress("Phase 4: Report Generation", "Creating comprehensive analysis report")
+        await update_progress("Phase 4: Report Generation", "Creating comprehensive rewards analysis report")
         report_path = f"reports/{task_id}.pdf"
         
-        legal_docs_summary = f"{len(legal_doc_names)} Legal Documents: {', '.join(legal_doc_names)}"
+        legal_docs_summary = f"{len(legal_doc_names)} Reward Framework Documents: {', '.join(legal_doc_names)}"
         
         await loop.run_in_executor(
             executor,
@@ -807,7 +807,7 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             report_path
         )
         
-        logger.info(f"Analysis completed successfully for task: {task_id}")
+        logger.info(f"Rewards analysis completed successfully for task: {task_id}")
         
     except Exception as e:
         error_msg = f"Analysis failed: {str(e)}"
@@ -832,7 +832,7 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             logger.warning(f"Cleanup error: {cleanup_error}")
 
 if __name__ == "__main__":
-    print("AI Legal Compliance Analysis System")
+    print("RAIA - Rewards AI Assistant")
     print("Version: 4.0.0")
     print("Starting server...")
     print("Web interface: http://localhost:8000")

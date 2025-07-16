@@ -98,7 +98,7 @@ function handleLegalFilesSelect(event) {
     updateAnalyzeButton();
     
     if (files.length > 0) {
-        showNotification(`${files.length} legal document(s) selected successfully!`, 'success');
+        showNotification(`${files.length} reward framework document(s) selected successfully!`, 'success');
     }
 }
 
@@ -167,7 +167,7 @@ function handlePolicyFileSelect(event) {
         
         updateAnalyzeButton();
         
-        showNotification(`Policy file "${file.name}" selected successfully!`, 'success');
+        showNotification(`Compensation file "${file.name}" selected successfully!`, 'success');
     }
 }
 
@@ -186,7 +186,7 @@ function removePolicyFile() {
     uploadContent.querySelector('p').style.display = 'block';
     
     updateAnalyzeButton();
-    showNotification('Policy file removed.', 'info');
+    showNotification('Compensation file removed.', 'info');
 }
 
 function updateUploadBoxState() {
@@ -212,19 +212,19 @@ function updateAnalyzeButton() {
     analyzeBtn.disabled = !hasLegalFiles || !hasPolicyFile;
     
     if (hasLegalFiles && hasPolicyFile) {
-        analyzeBtn.innerHTML = '<i class="fas fa-brain"></i><span>Start AI Analysis</span>';
+        analyzeBtn.innerHTML = '<i class="fas fa-brain"></i><span>Start Rewards Analysis</span>';
     } else if (!hasLegalFiles && !hasPolicyFile) {
-        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Legal Documents and Policy First</span>';
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Reward Framework and Compensation Documents First</span>';
     } else if (!hasLegalFiles) {
-        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Legal Documents First</span>';
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Reward Framework Documents First</span>';
     } else {
-        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Policy Document First</span>';
+        analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Compensation Document First</span>';
     }
 }
 
 async function startAnalysis() {
     if (selectedLegalFiles.length === 0 || !selectedPolicyFile) {
-        showNotification('Please select legal documents and policy document first.', 'warning');
+        showNotification('Please select reward framework documents and compensation document first.', 'warning');
         return;
     }
     
@@ -258,7 +258,7 @@ async function startAnalysis() {
         showResultsSection();
         startPolling();
         
-        showNotification('AI analysis started successfully!', 'success');
+        showNotification('RAIA rewards analysis started successfully!', 'success');
         
     } catch (error) {
         console.error('Analysis start error:', error);
@@ -335,7 +335,7 @@ function updateProgressDisplay(statusData) {
     
     let progressPercentage = 20;
     let phaseText = 'Processing...';
-    let detailsText = 'AI is analyzing your documents...';
+    let detailsText = 'RAIA is analyzing your rewards documents...';
     
     if (statusData.progress) {
         phaseText = statusData.progress.current_phase || phaseText;
@@ -347,7 +347,7 @@ function updateProgressDisplay(statusData) {
         else if (phaseText.includes('Phase 4')) progressPercentage = 90;
     }
     
-    progressTitle.textContent = 'AI Analysis in Progress';
+    progressTitle.textContent = 'RAIA Analysis in Progress';
     progressPhase.textContent = phaseText;
     progressDetails.textContent = detailsText;
     progressFill.style.width = `${progressPercentage}%`;
@@ -377,7 +377,7 @@ function showAnalysisComplete(data) {
     
     downloadBtn.disabled = false;
     
-    showNotification('🎉 AI analysis completed! Your comprehensive report is ready.', 'success');
+    showNotification('🎉 RAIA analysis completed! Your comprehensive rewards report is ready.', 'success');
 }
 
 function showAnalysisError(errorMessage) {
@@ -416,7 +416,7 @@ async function downloadReport() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ai_compliance_analysis_${currentTaskId}.pdf`;
+        a.download = `raia_rewards_analysis_${currentTaskId}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -425,7 +425,7 @@ async function downloadReport() {
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = originalContent;
         
-        showNotification('Report downloaded successfully!', 'success');
+        showNotification('Rewards analysis report downloaded successfully!', 'success');
         
     } catch (error) {
         console.error('Download error:', error);
@@ -460,7 +460,7 @@ function startNewAnalysis() {
     
     scrollToUpload();
     
-    showNotification('Ready for new analysis!', 'info');
+    showNotification('Ready for new rewards analysis!', 'info');
 }
 
 function handleNavigation(event) {
@@ -562,9 +562,9 @@ async function showSystemInfo() {
                 <h4>AI Intelligence Features:</h4>
                 <ul>
                     <li><strong>Document Understanding:</strong> ${data.ai_intelligence.document_understanding}</li>
-                    <li><strong>Requirement Extraction:</strong> ${data.ai_intelligence.requirement_extraction}</li>
-                    <li><strong>Compliance Analysis:</strong> ${data.ai_intelligence.compliance_analysis}</li>
-                    <li><strong>Gap Identification:</strong> ${data.ai_intelligence.gap_identification}</li>
+                    <li><strong>Rewards Extraction:</strong> ${data.ai_intelligence.rewards_extraction}</li>
+                    <li><strong>Equity Analysis:</strong> ${data.ai_intelligence.equity_analysis}</li>
+                    <li><strong>Benchmark Identification:</strong> ${data.ai_intelligence.benchmark_identification}</li>
                 </ul>
                 
                 <h4>Analysis Features:</h4>
@@ -590,18 +590,18 @@ async function showCapabilities() {
         
         const content = `
             <div class="capabilities-info">
-                <h4>Regulatory Documents Supported:</h4>
-                ${Object.entries(data.regulatory_documents).map(([category, docs]) => `
+                <h4>Rewards Documents Supported:</h4>
+                ${Object.entries(data.rewards_documents).map(([category, docs]) => `
                     <div style="margin-bottom: 16px;">
-                        <strong>${category.charAt(0).toUpperCase() + category.slice(1)}:</strong>
+                        <strong>${category.replace(/_/g, ' ').charAt(0).toUpperCase() + category.replace(/_/g, ' ').slice(1)}:</strong>
                         <ul style="margin-left: 20px;">
                             ${docs.map(doc => `<li>${doc}</li>`).join('')}
                         </ul>
                     </div>
                 `).join('')}
                 
-                <h4>Compliance Documents Supported:</h4>
-                ${Object.entries(data.compliance_documents).map(([category, docs]) => `
+                <h4>Compensation Documents Supported:</h4>
+                ${Object.entries(data.compensation_documents).map(([category, docs]) => `
                     <div style="margin-bottom: 16px;">
                         <strong>${category.charAt(0).toUpperCase() + category.slice(1)}:</strong>
                         <ul style="margin-left: 20px;">
@@ -625,31 +625,31 @@ async function showCapabilities() {
 function showHelp() {
     const content = `
         <div class="help-content">
-            <h4>How to Use the AI Legal Compliance Analyzer:</h4>
+            <h4>How to Use RAIA - Rewards AI Assistant:</h4>
             <ol style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Upload Legal Documents:</strong> Select one or more PDF documents containing legal requirements (laws, regulations, standards, etc.).</li>
-                <li><strong>Upload Policy Document:</strong> Select one PDF document containing the policy to be analyzed for compliance.</li>
-                <li><strong>Start Analysis:</strong> Click the "Start AI Analysis" button to begin the intelligent analysis process.</li>
-                <li><strong>Monitor Progress:</strong> Watch the real-time progress as the AI processes your documents through 5 intelligent phases.</li>
-                <li><strong>Download Report:</strong> Once complete, download your comprehensive compliance analysis report.</li>
+                <li><strong>Upload Reward Framework Documents:</strong> Select one or more PDF documents containing reward policies (salary guides, bonus plans, benefits handbooks, etc.).</li>
+                <li><strong>Upload Compensation Document:</strong> Select one PDF document containing the compensation to be analyzed for alignment.</li>
+                <li><strong>Start Analysis:</strong> Click the "Start Rewards Analysis" button to begin the intelligent analysis process.</li>
+                <li><strong>Monitor Progress:</strong> Watch the real-time progress as RAIA processes your documents through 5 intelligent phases.</li>
+                <li><strong>Download Report:</strong> Once complete, download your comprehensive rewards analysis report.</li>
             </ol>
             
             <h4>Tips for Best Results:</h4>
             <ul style="margin-left: 20px; line-height: 1.8;">
                 <li>Ensure PDFs contain selectable text (not scanned images)</li>
-                <li>Use clear, well-structured documents for optimal analysis</li>
+                <li>Use clear, well-structured reward documents for optimal analysis</li>
                 <li>Documents should be in English for best AI understanding</li>
                 <li>File size limit is 50MB per document</li>
-                <li>You can upload multiple legal documents to compare against one policy</li>
+                <li>You can upload multiple reward framework documents to compare against one compensation document</li>
             </ul>
             
-            <h4>AI Analysis Phases:</h4>
+            <h4>RAIA Analysis Phases:</h4>
             <ol style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Document Understanding:</strong> AI analyzes structure and content</li>
-                <li><strong>Strategy Selection:</strong> Determines optimal analysis approach</li>
-                <li><strong>Requirement Extraction:</strong> Dynamically extracts compliance requirements</li>
-                <li><strong>Compliance Analysis:</strong> Performs detailed compliance checking</li>
-                <li><strong>Report Generation:</strong> Creates comprehensive analysis report</li>
+                <li><strong>Policy Recognition:</strong> RAIA analyzes document types and compensation structures</li>
+                <li><strong>Reward Framework Mapping:</strong> Identifies optimal evaluation methods</li>
+                <li><strong>Rewards Component Extraction:</strong> Extracts salary bands, bonuses, and benefits</li>
+                <li><strong>Equity & Benchmark Analysis:</strong> Checks consistency and alignment</li>
+                <li><strong>Rewards Insights & Actions:</strong> Provides recommendations and insights</li>
             </ol>
         </div>
     `;
@@ -668,7 +668,7 @@ function showTechnicalInfo() {
                 <li><strong>Supported Formats:</strong> PDF documents</li>
                 <li><strong>File Size Limit:</strong> 50MB per document</li>
                 <li><strong>Processing Time:</strong> 3-7 minutes depending on complexity</li>
-                <li><strong>Multiple Documents:</strong> Supports multiple legal documents vs one policy</li>
+                <li><strong>Multiple Documents:</strong> Supports multiple reward framework documents vs one compensation document</li>
                 <li><strong>Offline Capability:</strong> Runs completely offline once installed</li>
             </ul>
             
@@ -680,13 +680,13 @@ function showTechnicalInfo() {
                 <li><strong>Internet:</strong> Not required after installation</li>
             </ul>
             
-            <h4>AI Advantages:</h4>
+            <h4>RAIA Advantages:</h4>
             <ul style="margin-left: 20px; line-height: 1.8;">
                 <li>No predefined templates or rules</li>
-                <li>Adapts to any legal domain or jurisdiction</li>
+                <li>Adapts to any rewards framework or compensation structure</li>
                 <li>Learns from document context and structure</li>
                 <li>Provides intelligent, contextual recommendations</li>
-                <li>Handles multiple legal documents simultaneously</li>
+                <li>Handles multiple reward documents simultaneously</li>
                 <li>Continuously improves analysis quality</li>
             </ul>
         </div>
@@ -700,34 +700,34 @@ function showAbout() {
         <div class="about-content">
             <div style="text-align: center; margin-bottom: 24px;">
                 <i class="fas fa-brain" style="font-size: 48px; color: var(--primary-color); margin-bottom: 16px;"></i>
-                <h3>AI Legal Compliance Analyzer</h3>
-                <p style="color: var(--text-secondary);">Revolutionary AI-Powered Document Analysis</p>
+                <h3>RAIA - Rewards AI Assistant</h3>
+                <p style="color: var(--text-secondary);">Revolutionary AI-Powered Rewards Analysis</p>
             </div>
             
-            <h4>About This System:</h4>
+            <h4>About RAIA:</h4>
             <p style="line-height: 1.8;">
-                This is a cutting-edge artificial intelligence system designed to revolutionize legal compliance analysis. 
-                Unlike traditional rule-based systems, our AI dynamically understands any type of legal document and 
-                performs intelligent compliance analysis without any hardcoded requirements or templates.
+                RAIA is a cutting-edge artificial intelligence system designed to revolutionize rewards and compensation analysis. 
+                Unlike traditional rule-based systems, RAIA dynamically understands any type of reward document and 
+                performs intelligent compensation analysis without any hardcoded requirements or templates.
             </p>
             
             <h4>Key Innovations:</h4>
             <ul style="margin-left: 20px; line-height: 1.8;">
                 <li><strong>Zero Hardcoding:</strong> No predefined rules or templates</li>
-                <li><strong>Universal Compatibility:</strong> Works with any document type</li>
-                <li><strong>Intelligent Understanding:</strong> True AI comprehension of legal content</li>
-                <li><strong>Dynamic Analysis:</strong> Adapts to any legal domain</li>
-                <li><strong>Multiple Document Support:</strong> Analyze multiple legal documents against policies</li>
+                <li><strong>Universal Compatibility:</strong> Works with any reward document type</li>
+                <li><strong>Intelligent Understanding:</strong> True AI comprehension of compensation content</li>
+                <li><strong>Dynamic Analysis:</strong> Adapts to any rewards framework</li>
+                <li><strong>Multiple Document Support:</strong> Analyze multiple reward documents against compensation</li>
                 <li><strong>Offline Operation:</strong> Complete privacy and security</li>
             </ul>
             
             <h4>Perfect For:</h4>
             <ul style="margin-left: 20px; line-height: 1.8;">
-                <li>Legal professionals and law firms</li>
-                <li>Compliance officers and departments</li>
-                <li>Contract managers and administrators</li>
-                <li>Business analysts and consultants</li>
-                <li>Anyone needing document compliance analysis</li>
+                <li>HR professionals and compensation specialists</li>
+                <li>Rewards managers and consultants</li>
+                <li>Total rewards teams</li>
+                <li>Business analysts and executives</li>
+                <li>Anyone needing rewards analysis and benchmarking</li>
             </ul>
             
             <div style="background: var(--background-alt); padding: 16px; border-radius: 8px; margin-top: 16px;">
@@ -738,7 +738,7 @@ function showAbout() {
         </div>
     `;
     
-    showInfoModal('About AI Legal Compliance', content);
+    showInfoModal('About RAIA - Rewards AI Assistant', content);
 }
 
 function showErrorDetails() {
