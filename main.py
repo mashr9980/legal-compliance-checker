@@ -458,7 +458,7 @@ def setup_frontend_files():
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 RAIA - Rewards AI Assistant. Advanced AI Technology.</p>
+                <p>&copy; 2025 RAIA - Rewards AI Assistant. Advanced AI Technology.</p>
             </div>
         </div>
     </footer>

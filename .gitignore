@@ -4,3 +4,4 @@ services/__pycache__/
 temp_files
 __pycache__/
 reports/
+node_modules/
