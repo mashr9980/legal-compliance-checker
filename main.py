@@ -835,13 +835,13 @@ if __name__ == "__main__":
     print("RAIA - Rewards AI Assistant")
     print("Version: 4.0.0")
     print("Starting server...")
-    print("Web interface: http://localhost:8000")
-    print("API documentation: http://localhost:8000/docs")
+    print("Web interface: http://localhost:8010")
+    print("API documentation: http://localhost:8010/docs")
     
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
-        port=8000,
+        port=8010,
         reload=False,
         log_level="info"
     )

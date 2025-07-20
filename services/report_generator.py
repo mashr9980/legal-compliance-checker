@@ -1,327 +1,259 @@
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from datetime import datetime
 from models.schemas import PolicyChecklist, PolicyStatus
-from typing import Dict, Any
 
 class IntelligentReportGenerator:
     def __init__(self):
         self.styles = getSampleStyleSheet()
         self._setup_dynamic_styles()
-    
+
     def _setup_dynamic_styles(self):
         self.styles.add(ParagraphStyle(
             name='ReportTitle',
             parent=self.styles['Heading1'],
-            fontSize=20,
-            spaceAfter=30,
-            alignment=TA_CENTER,
-            textColor=colors.black,
-            fontName='Helvetica-Bold'
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='SectionTitle',
-            parent=self.styles['Heading2'],
-            fontSize=16,
+            fontSize=18,
             spaceAfter=20,
-            spaceBefore=25,
             alignment=TA_CENTER,
             textColor=colors.black,
             fontName='Helvetica-Bold'
         ))
-        
+
         self.styles.add(ParagraphStyle(
-            name='CategoryHeader',
-            parent=self.styles['Heading3'],
-            fontSize=14,
-            spaceAfter=15,
-            spaceBefore=20,
-            alignment=TA_LEFT,
-            textColor=colors.black,
-            fontName='Helvetica-Bold'
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='RecommendationText',
+            name='TableHeader',
             parent=self.styles['Normal'],
-            fontSize=11,
+            fontSize=12,
+            fontName='Helvetica-Bold',
+            textColor=colors.black,
+            alignment=TA_CENTER
+        ))
+
+        self.styles.add(ParagraphStyle(
+            name='TableContent',
+            parent=self.styles['Normal'],
+            fontSize=10,
             fontName='Helvetica',
             textColor=colors.black,
             alignment=TA_LEFT,
-            spaceAfter=8,
-            leftIndent=20,
-            bulletIndent=10,
             wordWrap='CJK'
         ))
         
         self.styles.add(ParagraphStyle(
-            name='OverallHeader',
-            parent=self.styles['Heading3'],
-            fontSize=14,
-            spaceAfter=15,
-            spaceBefore=25,
-            alignment=TA_LEFT,
+            name='StatusText',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            fontName='Helvetica',
             textColor=colors.black,
-            fontName='Helvetica-Bold'
+            alignment=TA_LEFT
         ))
-        
+
         self.styles.add(ParagraphStyle(
-            name='OverallText',
+            name='SummaryText',
             parent=self.styles['Normal'],
             fontSize=11,
             fontName='Helvetica',
             textColor=colors.black,
-            alignment=TA_LEFT,
-            spaceAfter=8,
-            leftIndent=20,
-            bulletIndent=10,
+            alignment=TA_JUSTIFY,
+            spaceAfter=12,
+            leftIndent=0,
+            rightIndent=0,
             wordWrap='CJK'
         ))
-    
+
+        self.styles.add(ParagraphStyle(
+            name='SummaryHeader',
+            parent=self.styles['Normal'],
+            fontSize=14,
+            fontName='Helvetica-Bold',
+            textColor=colors.black,
+            alignment=TA_LEFT,
+            spaceAfter=10,
+            spaceBefore=15
+        ))
+
+        self.styles.add(ParagraphStyle(
+            name='LegendText',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            fontName='Helvetica',
+            textColor=colors.black,
+            alignment=TA_LEFT,
+            spaceAfter=4
+        ))
+
     def generate_intelligent_report(self, checklist: PolicyChecklist, doc1_filename: str, doc2_filename: str, output_path: str):
         doc = SimpleDocTemplate(
             output_path,
-            pagesize=A4,
-            rightMargin=0.75*inch,
-            leftMargin=0.75*inch,
-            topMargin=1*inch,
-            bottomMargin=1*inch
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=18
         )
-        
+
         story = []
+
+        story.extend(self._create_checklist_table(checklist))
+        story.extend(self._create_legend())
+        story.extend(self._create_summary_section(checklist))
+
+        doc.build(story)
+    
+    def _create_checklist_table(self, checklist: PolicyChecklist):
+        elements = []
         
-        story.append(Paragraph("RAIA – Smart Policy Review Report", self.styles['ReportTitle']))
-        story.append(Spacer(1, 20))
-        
-        story.append(Paragraph("Recommendations / Suggested Amendments per Section", self.styles['SectionTitle']))
-        story.append(Spacer(1, 20))
-        
+        elements.append(Paragraph("Policy Review Checklist", self.styles['ReportTitle']))
+        elements.append(Spacer(1, 20))
+
         categories = {}
         for item in checklist.items:
             if item.category not in categories:
                 categories[item.category] = []
             categories[item.category].append(item)
-        
+
         category_labels = {
-            'employment_terms': '1. Organizational Design & Workforce Planning',
-            'compensation_benefits': '6. Compensation & Benefits', 
-            'working_conditions': '3. Learning & Development',
-            'termination_conditions': '4. Performance Management',
-            'confidentiality_non_compete': '5. Talent Management',
-            'intellectual_property': '7. Human Capital Operations',
-            'dispute_resolution': '8. Regulatory Compliance & Governance',
-            'compliance_regulatory': '8. Regulatory Compliance & Governance',
-            'health_safety': '7. Human Capital Operations',
-            'leave_policies': '7. Human Capital Operations',
-            'other': '9. Overall Policy Quality & Maturity'
+            'employment_terms': 'A. Organizational Development',
+            'compensation_benefits': 'B. Talent Acquisition', 
+            'working_conditions': 'C. Learning & development',
+            'termination_conditions': 'D. Performance management',
+            'confidentiality_non_compete': 'E. Talent Management',
+            'intellectual_property': 'F. HC operation',
+            'dispute_resolution': 'G. Compensation & benefits',
+            'compliance_regulatory': 'H. Compliance',
+            'health_safety': 'I. Health & Safety',
+            'leave_policies': 'J. Leave Policies',
+            'other': 'K. Other'
         }
+
+        for category, items in categories.items():
+            if not items:
+                continue
+                
+            category_label = category_labels.get(category, category.replace('_', ' ').title())
+            
+            table_data = []
+            table_data.append([
+                Paragraph("Item", self.styles['TableHeader']),
+                Paragraph("Chapter", self.styles['TableHeader']),
+                Paragraph("Feedback", self.styles['TableHeader']),
+                Paragraph("Comments", self.styles['TableHeader']),
+                Paragraph("Suggested Amendments", self.styles['TableHeader'])
+            ])
+            
+            for item in items:
+                status_text = self._get_status_text(item.status)
+
+                item_text = item.item if item.item else "General Item"
+                chapter_text = item.chapter if item.chapter else "General"
+                comments_text = item.comments if item.comments else ""
+                amendments_text = item.suggested_amendments if item.suggested_amendments else ""
+
+                table_data.append([
+                    Paragraph(item_text, self.styles['TableContent']),
+                    Paragraph(chapter_text, self.styles['TableContent']),
+                    Paragraph(status_text, self.styles['StatusText']),
+                    Paragraph(comments_text, self.styles['TableContent']),
+                    Paragraph(amendments_text, self.styles['TableContent'])
+                ])
+            
+            table = Table(table_data, colWidths=[1.5*inch, 1.5*inch, 1.2*inch, 1.8*inch, 2*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.white])
+            ]))
+            
+            elements.append(Paragraph(category_label, self.styles['TableHeader']))
+            elements.append(Spacer(1, 10))
+            elements.append(table)
+            elements.append(Spacer(1, 20))
         
-        talent_acquisition_items = []
-        
-        category_order = [
-            'employment_terms',
-            'compensation_benefits',
-            'working_conditions', 
-            'termination_conditions',
-            'confidentiality_non_compete',
-            'intellectual_property',
-            'dispute_resolution',
-            'compliance_regulatory',
-            'health_safety',
-            'leave_policies',
-            'other'
+        return elements
+
+    def _get_status_text(self, status: PolicyStatus) -> str:
+        if status == PolicyStatus.ALIGNED:
+            return "Aligned"
+        elif status == PolicyStatus.MODERATE:
+            return "Needs consideration"
+        else:
+            return "Unaligned/Missing"
+
+    def _create_legend(self):
+        elements = []
+
+        elements.append(Paragraph("Policy Review Checklist", self.styles['SummaryHeader']))
+        elements.append(Spacer(1, 10))
+
+        legend_text = """<b>Unaligned/Missing:</b> Missing key information or not aligned to the labor law.<br/>
+<b>Moderate:</b> minor comments / room for improvement or consideration.<br/>
+<b>Aligned:</b> to our standard and market practices."""
+
+        elements.append(Paragraph(legend_text, self.styles['LegendText']))
+        elements.append(Spacer(1, 20))
+
+        return elements
+
+    def _create_summary_section(self, checklist: PolicyChecklist):
+        elements = []
+
+        elements.append(PageBreak())
+        elements.append(Paragraph("Overall Policy Feedback", self.styles['SummaryHeader']))
+        elements.append(Spacer(1, 15))
+
+        stats = checklist.overall_feedback["statistics"]
+
+        feedback_data = [
+            ["Feedback", "#"],
+            ["Aligned", str(stats["aligned"])],
+            ["Moderate", str(stats["moderate"])],
+            ["Unaligned/Missing", str(stats["unaligned"])]
         ]
+
+        feedback_table = Table(feedback_data, colWidths=[2*inch, 1*inch])
+        feedback_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP')
+        ]))
         
-        processed_categories = set()
+        elements.append(feedback_table)
+        elements.append(Spacer(1, 20))
         
-        for category in category_order:
-            if category in categories and category not in processed_categories:
-                items = categories[category]
-                if not items:
-                    continue
-                    
-                category_label = category_labels.get(category, category.replace('_', ' ').title())
-                
-                if category == 'employment_terms':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_employment_recommendations(items))
-                    
-                    story.append(Paragraph("2. Talent Acquisition", self.styles['CategoryHeader']))
-                    story.extend(self._generate_talent_acquisition_recommendations())
-                    
-                elif category == 'working_conditions':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_learning_development_recommendations(items))
-                    
-                elif category == 'termination_conditions':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_performance_management_recommendations(items))
-                    
-                elif category == 'confidentiality_non_compete':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_talent_management_recommendations(items))
-                    
-                elif category == 'compensation_benefits':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_compensation_recommendations(items))
-                    
-                elif category in ['intellectual_property', 'health_safety', 'leave_policies']:
-                    if '7. Human Capital Operations' not in [p.text for p in story if hasattr(p, 'text') and p.text.startswith('7.')]:
-                        story.append(Paragraph("7. Human Capital Operations", self.styles['CategoryHeader']))
-                        story.extend(self._generate_hc_operations_recommendations(categories.get('intellectual_property', []) + 
-                                                                               categories.get('health_safety', []) + 
-                                                                               categories.get('leave_policies', [])))
-                    
-                elif category in ['dispute_resolution', 'compliance_regulatory']:
-                    if '8. Regulatory Compliance & Governance' not in [p.text for p in story if hasattr(p, 'text') and p.text.startswith('8.')]:
-                        story.append(Paragraph("8. Regulatory Compliance & Governance", self.styles['CategoryHeader']))
-                        story.extend(self._generate_compliance_recommendations(categories.get('dispute_resolution', []) + 
-                                                                             categories.get('compliance_regulatory', [])))
-                    
-                elif category == 'other':
-                    story.append(Paragraph(category_label, self.styles['CategoryHeader']))
-                    story.extend(self._generate_overall_recommendations(items))
-                
-                processed_categories.add(category)
+        assessment_text = checklist.overall_feedback.get("assessment", "")
+        if assessment_text:
+            elements.append(Paragraph(assessment_text, self.styles['SummaryText']))
         
-        doc.build(story)
-    
-    def _generate_employment_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Review and update {item.item.lower()} requirements", self.styles['RecommendationText']))
+        if checklist.additional_considerations:
+            elements.append(Paragraph("Additional considerations:", self.styles['SummaryText']))
+            for consideration in checklist.additional_considerations:
+                consideration_text = f"- {consideration}"
+                elements.append(Paragraph(consideration_text, self.styles['SummaryText']))
         
-        if not story:
-            story.append(Paragraph("• Review organizational structure and workforce planning policies", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_talent_acquisition_recommendations(self):
-        story = []
-        story.append(Paragraph("• Review recruitment and selection processes for effectiveness", self.styles['RecommendationText']))
-        story.append(Paragraph("• Enhance onboarding procedures to improve new hire integration", self.styles['RecommendationText']))
-        story.append(Paragraph("• Standardize talent acquisition practices across departments", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_learning_development_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Enhance {item.item.lower()} development programs", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Establish comprehensive learning and development framework", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_performance_management_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Improve {item.item.lower()} processes and procedures", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Strengthen performance management systems and processes", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_talent_management_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Address {item.item.lower()} requirements", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Develop comprehensive talent management strategies", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_compensation_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Review and update {item.item.lower()} policies", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Review compensation and benefits structure for market alignment", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_hc_operations_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Improve {item.item.lower()} procedures", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Enhance human capital operations and service delivery", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_compliance_recommendations(self, items):
-        story = []
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-            elif item.comments and item.comments.strip():
-                story.append(Paragraph(f"• {item.comments}", self.styles['RecommendationText']))
-            else:
-                story.append(Paragraph(f"• Ensure compliance with {item.item.lower()} requirements", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Strengthen regulatory compliance and governance framework", self.styles['RecommendationText']))
-        
-        return story
-    
-    def _generate_overall_recommendations(self, items):
-        story = []
-        
-        unaligned_items = [item for item in items if item.status == PolicyStatus.UNALIGNED]
-        moderate_items = [item for item in items if item.status == PolicyStatus.MODERATE]
-        
-        if unaligned_items:
-            story.append(Paragraph("• Address critical policy gaps and missing requirements", self.styles['RecommendationText']))
-        
-        if moderate_items:
-            story.append(Paragraph("• Review and enhance policies requiring moderate improvements", self.styles['RecommendationText']))
-        
-        for item in items:
-            if item.suggested_amendments and item.suggested_amendments.strip():
-                story.append(Paragraph(f"• {item.suggested_amendments}", self.styles['RecommendationText']))
-        
-        if not story:
-            story.append(Paragraph("• Conduct comprehensive policy review and update", self.styles['RecommendationText']))
-            story.append(Paragraph("• Implement quality assurance measures for policy management", self.styles['RecommendationText']))
-        
-        return story
+        return elements
