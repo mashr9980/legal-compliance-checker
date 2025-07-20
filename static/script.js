@@ -4,7 +4,7 @@ let analysisStartTime = null;
 let selectedLegalFiles = [];
 let selectedPolicyFile = null;
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8010';
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
