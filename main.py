@@ -765,11 +765,32 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
     try:
         logger.info(f"Starting rewards analysis pipeline for task: {task_id}")
         
+        # Get instances from app state with fallback initialization
+        doc_processor = getattr(app.state, 'document_processor', None)
+        compliance_engine = getattr(app.state, 'compliance_engine', None)
+        report_gen = getattr(app.state, 'report_generator', None)
+        llm_analyzer = getattr(app.state, 'llm_analyzer', None)
+        
+        # Initialize missing components if needed
+        if not doc_processor:
+            doc_processor = DocumentProcessor()
+            if llm_analyzer:
+                doc_processor.set_llm_analyzer(llm_analyzer)
+            app.state.document_processor = doc_processor
+            
+        if not compliance_engine:
+            compliance_engine = IntelligentComplianceEngine()
+            app.state.compliance_engine = compliance_engine
+            
+        if not report_gen:
+            report_gen = IntelligentReportGenerator()
+            app.state.report_generator = report_gen
+        
         await update_progress("Phase 1: Document Processing", "Extracting and analyzing document content")
         
         legal_texts = []
         for i, doc_path in enumerate(legal_doc_paths):
-            extraction = await document_processor.intelligent_extract_text(doc_path)
+            extraction = await doc_processor.intelligent_extract_text(doc_path)
             text = extraction["extracted_text"]
             
             if len(text) < 200:
@@ -777,7 +798,7 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             
             legal_texts.append(text)
         
-        policy_extraction = await document_processor.intelligent_extract_text(policy_path)
+        policy_extraction = await doc_processor.intelligent_extract_text(policy_path)
         policy_text = policy_extraction["extracted_text"]
         
         if len(policy_text) < 200:
@@ -798,9 +819,10 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
         
         legal_docs_summary = f"{len(legal_doc_names)} Reward Framework Documents: {', '.join(legal_doc_names)}"
         
+        # Use the executor to run the report generation in a thread
         await loop.run_in_executor(
             executor,
-            report_generator.generate_intelligent_report,
+            report_gen.generate_intelligent_report,
             policy_checklist,
             legal_docs_summary,
             policy_filename,
