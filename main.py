@@ -9,7 +9,7 @@ from pathlib import Path
 from services.document_processor import DocumentProcessor
 from services.compliance_checker import IntelligentComplianceEngine
 from services.report_generator import IntelligentReportGenerator
-from services.ollama_client import IntelligentAnalyzer
+from services.intelligent_analyzer import IntelligentPolicyAnalyzer
 from models.schemas import AnalysisResponse
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -28,20 +28,20 @@ executor = ThreadPoolExecutor(max_workers=4)
 document_processor = None
 compliance_engine = None
 report_generator = None
-llm_analyzer = None
+policy_analyzer = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global document_processor, compliance_engine, report_generator, llm_analyzer
+    global document_processor, compliance_engine, report_generator, policy_analyzer
     
-    logger.info("Initializing RAIA - Rewards AI Assistant System...")
+    logger.info("🚀 Initializing RAIA - Intelligent Policy Analysis System...")
     
     try:
-        llm_analyzer = IntelligentAnalyzer()
-        await llm_analyzer.initialize()
+        policy_analyzer = IntelligentPolicyAnalyzer()
+        await policy_analyzer.initialize()
         
         document_processor = DocumentProcessor()
-        document_processor.set_llm_analyzer(llm_analyzer)
+        document_processor.set_llm_analyzer(policy_analyzer)
         
         compliance_engine = IntelligentComplianceEngine()
         
@@ -50,29 +50,29 @@ async def lifespan(app: FastAPI):
         app.state.document_processor = document_processor
         app.state.compliance_engine = compliance_engine
         app.state.report_generator = report_generator
-        app.state.llm_analyzer = llm_analyzer
+        app.state.policy_analyzer = policy_analyzer
         
         os.makedirs("temp_files", exist_ok=True)
         os.makedirs("reports", exist_ok=True)
         os.makedirs("static", exist_ok=True)
         
-        logger.info("System initialized successfully")
+        logger.info("✅ RAIA system initialized successfully")
         yield
         
     except Exception as e:
-        logger.error(f"Failed to initialize system: {e}")
+        logger.error(f"❌ Failed to initialize RAIA system: {e}")
         yield
     
     finally:
-        logger.info("Shutting down system...")
-        if llm_analyzer:
-            await llm_analyzer.close()
+        logger.info("🔄 Shutting down RAIA system...")
+        if policy_analyzer:
+            await policy_analyzer.close()
         executor.shutdown(wait=True)
 
 app = FastAPI(
-    title="RAIA - Rewards AI Assistant",
-    description="AI-Powered Rewards Analysis and Compensation Intelligence",
-    version="4.0.0",
+    title="RAIA - Intelligent Policy Analysis System",
+    description="AI-Powered Intelligent Policy Review and Compliance Analysis",
+    version="5.0.0",
     lifespan=lifespan
 )
 
@@ -461,7 +461,6 @@ def setup_frontend_files():
                 <p>&copy; 2025 RAIA - Rewards AI Assistant. Advanced AI Technology.</p>
             </div>
         </div>
-    </footer>
 
     <div id="systemStatusModal" class="modal">
         <div class="modal-content">
@@ -520,7 +519,7 @@ def get_fallback_html():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>RAIA - Rewards AI Assistant</title>
+        <title>RAIA - Intelligent Policy Analysis</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
             .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -532,7 +531,7 @@ def get_fallback_html():
     </head>
     <body>
         <div class="container">
-            <h1>RAIA - Rewards AI Assistant</h1>
+            <h1>RAIA - Intelligent Policy Analysis System</h1>
             <div class="status">
                 <h2>System Status: Running</h2>
                 <p>The backend system is operational. Frontend files not found - please add your frontend implementation to the 'static' directory.</p>
@@ -544,8 +543,8 @@ def get_fallback_html():
                 <code>GET /health</code> - Check system status
             </div>
             <div class="endpoint">
-                <strong>Document Analysis:</strong><br>
-                <code>POST /analyze</code> - Start document analysis
+                <strong>Policy Analysis:</strong><br>
+                <code>POST /analyze</code> - Start intelligent policy analysis
             </div>
             <div class="endpoint">
                 <strong>Analysis Status:</strong><br>
@@ -554,6 +553,10 @@ def get_fallback_html():
             <div class="endpoint">
                 <strong>Download Report:</strong><br>
                 <code>GET /download/{task_id}</code> - Download analysis report
+            </div>
+            <div class="endpoint">
+                <strong>9-Point Framework:</strong><br>
+                <code>GET /criteria-framework</code> - View analysis criteria
             </div>
             
             <div style="margin-top: 30px; text-align: center; color: #64748b;">
@@ -634,7 +637,7 @@ async def get_supported_document_types():
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_documents(
     background_tasks: BackgroundTasks,
-    legal_documents: List[UploadFile] = File(..., description="Reward framework documents for analysis"),
+    legal_documents: List[UploadFile] = File(..., description="Reward framework documents"),
     policy_document: UploadFile = File(..., description="Compensation document for analysis")
 ):
     if not legal_documents or len(legal_documents) == 0:
@@ -651,18 +654,18 @@ async def analyze_documents(
         raise HTTPException(status_code=400, detail="Compensation document must be PDF format")
     
     task_id = str(uuid.uuid4())
-    logger.info(f"Starting rewards analysis task: {task_id}")
+    logger.info(f"🎯 Starting rewards analysis task: {task_id}")
     
     try:
-        legal_doc_paths = []
-        legal_doc_names = []
+        regulatory_doc_paths = []
+        regulatory_doc_names = []
         
         for doc in legal_documents:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
                 doc_content = await doc.read()
                 temp_file.write(doc_content)
-                legal_doc_paths.append(temp_file.name)
-                legal_doc_names.append(doc.filename)
+                regulatory_doc_paths.append(temp_file.name)
+                regulatory_doc_names.append(doc.filename)
         
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_policy:
             policy_content = await policy_document.read()
@@ -670,8 +673,8 @@ async def analyze_documents(
             policy_path = temp_policy.name
         
         background_tasks.add_task(
-            analysis_pipeline,
-            task_id, legal_doc_paths, policy_path, legal_doc_names, policy_document.filename
+            rewards_analysis_pipeline,
+            task_id, regulatory_doc_paths, policy_path, regulatory_doc_names, policy_document.filename
         )
         
         return AnalysisResponse(
@@ -681,7 +684,7 @@ async def analyze_documents(
         )
         
     except Exception as e:
-        logger.error(f"Analysis request failed: {e}")
+        logger.error(f"❌ Analysis request failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis request failed: {str(e)}")
 
 @app.get("/status/{task_id}")
@@ -696,7 +699,7 @@ async def get_analysis_status(task_id: str):
             "status": "completed", 
             "task_id": task_id,
             "report_size": file_size,
-            "message": "Rewards analysis completed successfully",
+            "message": "Intelligent policy analysis completed successfully",
             "download_ready": True
         }
     
@@ -728,7 +731,7 @@ async def get_analysis_status(task_id: str):
     return {
         "status": "processing", 
         "task_id": task_id,
-        "message": "Analysis in progress...",
+        "message": "Intelligent analysis in progress...",
         "download_ready": False
     }
 
@@ -740,12 +743,12 @@ async def download_report(task_id: str):
     
     return FileResponse(
         path=report_path,
-        filename=f"rewards_analysis_{task_id}.pdf",
+        filename=f"raia_policy_analysis_{task_id}.pdf",
         media_type="application/pdf"
     )
 
-async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_path: str, 
-                          legal_doc_names: List[str], policy_filename: str):
+async def rewards_analysis_pipeline(task_id: str, regulatory_doc_paths: List[str], policy_path: str, 
+                                      regulatory_doc_names: List[str], policy_filename: str):
     loop = asyncio.get_event_loop()
     error_path = f"reports/{task_id}.error"
     progress_path = f"reports/{task_id}.progress"
@@ -760,22 +763,20 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             with open(progress_path, 'w') as f:
                 json.dump(progress_info, f)
         except Exception as e:
-            logger.warning(f"Could not update progress: {e}")
+            logger.warning(f"⚠️ Could not update progress: {e}")
     
     try:
-        logger.info(f"Starting rewards analysis pipeline for task: {task_id}")
+        logger.info(f"🚀 Starting rewards analysis pipeline for task: {task_id}")
         
-        # Get instances from app state with fallback initialization
         doc_processor = getattr(app.state, 'document_processor', None)
         compliance_engine = getattr(app.state, 'compliance_engine', None)
         report_gen = getattr(app.state, 'report_generator', None)
-        llm_analyzer = getattr(app.state, 'llm_analyzer', None)
+        policy_analyzer = getattr(app.state, 'policy_analyzer', None)
         
-        # Initialize missing components if needed
         if not doc_processor:
             doc_processor = DocumentProcessor()
-            if llm_analyzer:
-                doc_processor.set_llm_analyzer(llm_analyzer)
+            if policy_analyzer:
+                doc_processor.set_llm_analyzer(policy_analyzer)
             app.state.document_processor = doc_processor
             
         if not compliance_engine:
@@ -788,15 +789,15 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
         
         await update_progress("Phase 1: Document Processing", "Extracting and analyzing document content")
         
-        legal_texts = []
-        for i, doc_path in enumerate(legal_doc_paths):
+        regulatory_texts = []
+        for i, doc_path in enumerate(regulatory_doc_paths):
             extraction = await doc_processor.intelligent_extract_text(doc_path)
             text = extraction["extracted_text"]
             
             if len(text) < 200:
-                raise Exception(f"Reward framework document {i+1} ({legal_doc_names[i]}) contains insufficient readable text")
+                raise Exception(f"Reward framework document {i+1} ({regulatory_doc_names[i]}) contains insufficient readable text")
             
-            legal_texts.append(text)
+            regulatory_texts.append(text)
         
         policy_extraction = await doc_processor.intelligent_extract_text(policy_path)
         policy_text = policy_extraction["extracted_text"]
@@ -804,46 +805,42 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
         if len(policy_text) < 200:
             raise Exception(f"Compensation document ({policy_filename}) contains insufficient readable text")
         
-        combined_legal_text = "\n\n--- DOCUMENT SEPARATOR ---\n\n".join(legal_texts)
-        
         await update_progress("Phase 2: Document Understanding", "RAIA analyzing document types and content")
-        analysis_context = await compliance_engine.analyze_documents(combined_legal_text, policy_text)
         
-        await update_progress("Phase 3: Rewards Analysis", "Extracting components and checking alignment")
-        policy_checklist = await compliance_engine.generate_intelligent_checklist(
-            combined_legal_text, policy_text, analysis_context
+        regulatory_docs_summary = f"{len(regulatory_doc_names)} Reward Framework Documents: {', '.join(regulatory_doc_names)}"
+        
+        policy_assessment = await compliance_engine.comprehensive_policy_analysis(
+            regulatory_texts, policy_text, regulatory_doc_names, policy_filename
         )
         
-        await update_progress("Phase 4: Report Generation", "Creating comprehensive rewards analysis report")
+        await update_progress("Phase 3: Report Generation", "Creating comprehensive rewards analysis report")
+        
         report_path = f"reports/{task_id}.pdf"
         
-        legal_docs_summary = f"{len(legal_doc_names)} Reward Framework Documents: {', '.join(legal_doc_names)}"
-        
-        # Use the executor to run the report generation in a thread
         await loop.run_in_executor(
             executor,
-            report_gen.generate_intelligent_report,
-            policy_checklist,
-            legal_docs_summary,
+            report_gen.generate_professional_report,
+            policy_assessment,
+            regulatory_docs_summary,
             policy_filename,
             report_path
         )
         
-        logger.info(f"Rewards analysis completed successfully for task: {task_id}")
+        logger.info(f"✅ Rewards analysis completed successfully for task: {task_id}")
         
     except Exception as e:
         error_msg = f"Analysis failed: {str(e)}"
-        logger.error(f"Task {task_id}: {error_msg}")
+        logger.error(f"❌ Task {task_id}: {error_msg}")
         
         try:
             with open(error_path, 'w') as f:
                 f.write(error_msg)
         except Exception as write_error:
-            logger.error(f"Could not write error file: {write_error}")
+            logger.error(f"❌ Could not write error file: {write_error}")
         
     finally:
         try:
-            for doc_path in legal_doc_paths:
+            for doc_path in regulatory_doc_paths:
                 if os.path.exists(doc_path):
                     os.unlink(doc_path)
             if os.path.exists(policy_path):
@@ -851,14 +848,15 @@ async def analysis_pipeline(task_id: str, legal_doc_paths: List[str], policy_pat
             if os.path.exists(progress_path):
                 os.unlink(progress_path)
         except Exception as cleanup_error:
-            logger.warning(f"Cleanup error: {cleanup_error}")
+            logger.warning(f"⚠️ Cleanup error: {cleanup_error}")
 
 if __name__ == "__main__":
-    print("RAIA - Rewards AI Assistant")
-    print("Version: 4.0.0")
-    print("Starting server...")
-    print("Web interface: http://localhost:8010")
-    print("API documentation: http://localhost:8010/docs")
+    print("🧠 RAIA - Rewards AI Assistant")
+    print("📊 Version: 4.0.0")
+    print("🎯 AI-Powered Rewards Analysis")
+    print("🚀 Starting server...")
+    print("🌐 Web interface: http://localhost:8010")
+    print("📖 API documentation: http://localhost:8010/docs")
     
     uvicorn.run(
         "main:app", 

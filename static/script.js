@@ -1,55 +1,86 @@
 let currentTaskId = null;
 let pollInterval = null;
 let analysisStartTime = null;
-let selectedLegalFiles = [];
+let selectedRegulatoryFiles = [];
 let selectedPolicyFile = null;
 
 const API_BASE_URL = 'http://localhost:8010';
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    console.log('🚀 DOM Content Loaded - Starting RAIA initialization...');
+    setTimeout(initializeApp, 200);
 });
 
 async function initializeApp() {
     try {
+        console.log('🔧 Starting app initialization...');
         showLoadingScreen();
-        
         await checkSystemHealth();
-        
         initializeEventListeners();
-        
         setTimeout(() => {
             hideLoadingScreen();
+            console.log('✅ RAIA initialization completed successfully');
         }, 2000);
-        
     } catch (error) {
-        console.error('Initialization error:', error);
-        showError('System initialization failed. Please check if the backend is running.');
+        console.error('❌ Initialization error:', error);
+        showNotification('System initialization failed. Please check if the backend is running.', 'error');
         hideLoadingScreen();
     }
 }
 
 function showLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.classList.remove('hidden');
+    if (loadingScreen) {
+        loadingScreen.classList.remove('hidden');
+    }
 }
 
 function hideLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.classList.add('hidden');
+    if (loadingScreen) {
+        loadingScreen.classList.add('hidden');
+    }
 }
 
 function initializeEventListeners() {
-    document.getElementById('legalFiles').addEventListener('change', handleLegalFilesSelect);
-    document.getElementById('policyFile').addEventListener('change', handlePolicyFileSelect);
+    console.log('🔧 Initializing event listeners...');
+    
+    const legalFiles = document.getElementById('legalFiles');
+    const policyFile = document.getElementById('policyFile');
+    
+    console.log('Elements found:', { 
+        legalFiles: !!legalFiles, 
+        policyFile: !!policyFile,
+        analyzeBtn: !!document.getElementById('analyzeBtn'),
+        uploadBoxLegal: !!document.getElementById('uploadBoxLegal'),
+        uploadBoxPolicy: !!document.getElementById('uploadBoxPolicy')
+    });
+    
+    if (legalFiles) {
+        legalFiles.addEventListener('change', handleRegulatoryFilesSelect);
+        console.log('✅ Legal files event listener added');
+    } else {
+        console.error('❌ legalFiles element not found');
+    }
+    
+    if (policyFile) {
+        policyFile.addEventListener('change', handlePolicyFileSelect);
+        console.log('✅ Policy file event listener added');
+    } else {
+        console.error('❌ policyFile element not found');
+    }
     
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', handleNavigation);
     });
     
     window.addEventListener('scroll', updateActiveNav);
-    
     document.addEventListener('click', handleModalClose);
+    
+    // Initialize the analyze button state
+    updateAnalyzeButton();
+    
+    console.log('✅ All event listeners initialized');
 }
 
 async function checkSystemHealth() {
@@ -58,7 +89,7 @@ async function checkSystemHealth() {
         const data = await response.json();
         
         if (data.status === 'healthy') {
-            console.log('✅ System is healthy:', data);
+            console.log('✅ RAIA system is healthy:', data);
             return true;
         } else {
             throw new Error('System health check failed');
@@ -69,10 +100,9 @@ async function checkSystemHealth() {
     }
 }
 
-function handleLegalFilesSelect(event) {
+function handleRegulatoryFilesSelect(event) {
+    console.log('📁 Handling regulatory files selection...');
     const files = Array.from(event.target.files);
-    const uploadBox = document.getElementById('uploadBoxLegal');
-    const fileInfoContainer = document.getElementById('legalFilesInfo');
     
     for (const file of files) {
         if (!file.name.toLowerCase().endsWith('.pdf')) {
@@ -85,13 +115,13 @@ function handleLegalFilesSelect(event) {
             continue;
         }
         
-        if (selectedLegalFiles.some(f => f.name === file.name)) {
+        if (selectedRegulatoryFiles.some(f => f.name === file.name)) {
             showNotification(`File "${file.name}" already selected.`, 'warning');
             continue;
         }
         
-        selectedLegalFiles.push(file);
-        addLegalFileToUI(file);
+        selectedRegulatoryFiles.push(file);
+        addRegulatoryFileToUI(file);
     }
     
     updateUploadBoxState();
@@ -102,9 +132,14 @@ function handleLegalFilesSelect(event) {
     }
 }
 
-function addLegalFileToUI(file) {
+function addRegulatoryFileToUI(file) {
     const fileInfoContainer = document.getElementById('legalFilesInfo');
     const uploadBox = document.getElementById('uploadBoxLegal');
+    
+    if (!fileInfoContainer || !uploadBox) {
+        console.error('❌ Required elements not found for file UI');
+        return;
+    }
     
     const fileInfo = document.createElement('div');
     fileInfo.className = 'file-info';
@@ -112,7 +147,7 @@ function addLegalFileToUI(file) {
         <i class="fas fa-file-pdf"></i>
         <span class="file-name">${file.name}</span>
         <span class="file-size">${formatFileSize(file.size)}</span>
-        <button class="btn-remove" onclick="removeLegalFile('${file.name}')">
+        <button class="btn-remove" onclick="removeRegulatoryFile('${file.name.replace(/'/g, "\\'")}')">
             <i class="fas fa-times"></i>
         </button>
     `;
@@ -121,14 +156,17 @@ function addLegalFileToUI(file) {
     uploadBox.classList.add('has-file');
 }
 
-function removeLegalFile(fileName) {
-    selectedLegalFiles = selectedLegalFiles.filter(file => file.name !== fileName);
+function removeRegulatoryFile(fileName) {
+    selectedRegulatoryFiles = selectedRegulatoryFiles.filter(file => file.name !== fileName);
     
     const fileInfoContainer = document.getElementById('legalFilesInfo');
+    if (!fileInfoContainer) return;
+    
     const fileInfos = fileInfoContainer.querySelectorAll('.file-info');
     
     fileInfos.forEach(info => {
-        if (info.querySelector('.file-name').textContent === fileName) {
+        const nameElement = info.querySelector('.file-name');
+        if (nameElement && nameElement.textContent === fileName) {
             info.remove();
         }
     });
@@ -140,9 +178,16 @@ function removeLegalFile(fileName) {
 }
 
 function handlePolicyFileSelect(event) {
+    console.log('📄 Handling policy file selection...');
     const file = event.target.files[0];
     const uploadBox = document.getElementById('uploadBoxPolicy');
     const fileInfo = document.getElementById('policyFileInfo');
+    
+    if (!uploadBox || !fileInfo) {
+        console.error('❌ Required elements not found for policy file');
+        return;
+    }
+    
     const uploadContent = uploadBox.querySelector('.upload-content');
     
     if (file) {
@@ -160,10 +205,18 @@ function handlePolicyFileSelect(event) {
         
         uploadBox.classList.add('has-file');
         fileInfo.style.display = 'flex';
-        fileInfo.querySelector('.file-name').textContent = file.name;
-        fileInfo.querySelector('.file-size').textContent = formatFileSize(file.size);
-        uploadContent.querySelector('.btn-upload').style.display = 'none';
-        uploadContent.querySelector('p').style.display = 'none';
+        
+        const nameElement = fileInfo.querySelector('.file-name');
+        const sizeElement = fileInfo.querySelector('.file-size');
+        if (nameElement) nameElement.textContent = file.name;
+        if (sizeElement) sizeElement.textContent = formatFileSize(file.size);
+        
+        if (uploadContent) {
+            const uploadBtn = uploadContent.querySelector('.btn-upload');
+            const uploadText = uploadContent.querySelector('p');
+            if (uploadBtn) uploadBtn.style.display = 'none';
+            if (uploadText) uploadText.style.display = 'none';
+        }
         
         updateAnalyzeButton();
         
@@ -174,48 +227,70 @@ function handlePolicyFileSelect(event) {
 function removePolicyFile() {
     const uploadBox = document.getElementById('uploadBoxPolicy');
     const fileInfo = document.getElementById('policyFileInfo');
-    const uploadContent = uploadBox.querySelector('.upload-content');
     const fileInput = document.getElementById('policyFile');
+    
+    if (!uploadBox || !fileInfo || !fileInput) {
+        console.warn('Some elements not found for removePolicyFile');
+        return;
+    }
+    
+    const uploadContent = uploadBox.querySelector('.upload-content');
     
     selectedPolicyFile = null;
     fileInput.value = '';
     
     uploadBox.classList.remove('has-file');
     fileInfo.style.display = 'none';
-    uploadContent.querySelector('.btn-upload').style.display = 'inline-flex';
-    uploadContent.querySelector('p').style.display = 'block';
+    
+    if (uploadContent) {
+        const uploadBtn = uploadContent.querySelector('.btn-upload');
+        const uploadText = uploadContent.querySelector('p');
+        if (uploadBtn) uploadBtn.style.display = 'inline-flex';
+        if (uploadText) uploadText.style.display = 'block';
+    }
     
     updateAnalyzeButton();
-    showNotification('Compensation file removed.', 'info');
+    showNotification('Policy file removed.', 'info');
 }
 
 function updateUploadBoxState() {
     const uploadBox = document.getElementById('uploadBoxLegal');
-    const uploadContent = uploadBox.querySelector('.upload-content');
+    if (!uploadBox) return;
     
-    if (selectedLegalFiles.length === 0) {
+    const uploadContent = uploadBox.querySelector('.upload-content');
+    if (!uploadContent) return;
+    
+    const uploadBtn = uploadContent.querySelector('.btn-upload');
+    const uploadText = uploadContent.querySelector('p');
+    
+    if (selectedRegulatoryFiles.length === 0) {
         uploadBox.classList.remove('has-file');
-        uploadContent.querySelector('.btn-upload').style.display = 'inline-flex';
-        uploadContent.querySelector('p').style.display = 'block';
+        if (uploadBtn) uploadBtn.style.display = 'inline-flex';
+        if (uploadText) uploadText.style.display = 'block';
     } else {
         uploadBox.classList.add('has-file');
-        uploadContent.querySelector('.btn-upload').style.display = 'none';
-        uploadContent.querySelector('p').style.display = 'none';
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (uploadText) uploadText.style.display = 'none';
     }
 }
 
 function updateAnalyzeButton() {
     const analyzeBtn = document.getElementById('analyzeBtn');
-    const hasLegalFiles = selectedLegalFiles.length > 0;
+    if (!analyzeBtn) {
+        console.warn('❌ analyzeBtn element not found');
+        return;
+    }
+    
+    const hasRegulatoryFiles = selectedRegulatoryFiles.length > 0;
     const hasPolicyFile = selectedPolicyFile !== null;
     
-    analyzeBtn.disabled = !hasLegalFiles || !hasPolicyFile;
+    analyzeBtn.disabled = !hasRegulatoryFiles || !hasPolicyFile;
     
-    if (hasLegalFiles && hasPolicyFile) {
+    if (hasRegulatoryFiles && hasPolicyFile) {
         analyzeBtn.innerHTML = '<i class="fas fa-brain"></i><span>Start Rewards Analysis</span>';
-    } else if (!hasLegalFiles && !hasPolicyFile) {
+    } else if (!hasRegulatoryFiles && !hasPolicyFile) {
         analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Reward Framework and Compensation Documents First</span>';
-    } else if (!hasLegalFiles) {
+    } else if (!hasRegulatoryFiles) {
         analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Reward Framework Documents First</span>';
     } else {
         analyzeBtn.innerHTML = '<i class="fas fa-upload"></i><span>Select Compensation Document First</span>';
@@ -223,19 +298,21 @@ function updateAnalyzeButton() {
 }
 
 async function startAnalysis() {
-    if (selectedLegalFiles.length === 0 || !selectedPolicyFile) {
-        showNotification('Please select reward framework documents and compensation document first.', 'warning');
+    if (selectedRegulatoryFiles.length === 0 || !selectedPolicyFile) {
+        showNotification('Please select regulatory documents and policy document first.', 'warning');
         return;
     }
     
     try {
         const analyzeBtn = document.getElementById('analyzeBtn');
-        analyzeBtn.disabled = true;
-        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Starting Analysis...</span>';
+        if (analyzeBtn) {
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Starting Analysis...</span>';
+        }
         
         const formData = new FormData();
         
-        selectedLegalFiles.forEach(file => {
+        selectedRegulatoryFiles.forEach(file => {
             formData.append('legal_documents', file);
         });
         
@@ -258,15 +335,17 @@ async function startAnalysis() {
         showResultsSection();
         startPolling();
         
-        showNotification('RAIA rewards analysis started successfully!', 'success');
+        showNotification('🎯 RAIA rewards analysis started successfully!', 'success');
         
     } catch (error) {
-        console.error('Analysis start error:', error);
+        console.error('❌ Analysis start error:', error);
         showNotification(`Failed to start analysis: ${error.message}`, 'error');
         
         const analyzeBtn = document.getElementById('analyzeBtn');
-        analyzeBtn.disabled = false;
-        updateAnalyzeButton();
+        if (analyzeBtn) {
+            analyzeBtn.disabled = false;
+            updateAnalyzeButton();
+        }
     }
 }
 
@@ -276,16 +355,20 @@ function showResultsSection() {
     const resultsDisplay = document.getElementById('resultsDisplay');
     const errorDisplay = document.getElementById('errorDisplay');
     
-    resultsSection.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'block';
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (resultsDisplay) resultsDisplay.style.display = 'none';
+    if (errorDisplay) errorDisplay.style.display = 'none';
     
-    progressContainer.style.display = 'block';
-    resultsDisplay.style.display = 'none';
-    errorDisplay.style.display = 'none';
+    const taskIdElement = document.getElementById('taskId');
+    const analysisTimeElement = document.getElementById('analysisTime');
     
-    document.getElementById('taskId').textContent = currentTaskId;
-    document.getElementById('analysisTime').textContent = new Date().toLocaleString();
+    if (taskIdElement) taskIdElement.textContent = currentTaskId;
+    if (analysisTimeElement) analysisTimeElement.textContent = new Date().toLocaleString();
     
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
+    if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 function startPolling() {
@@ -297,7 +380,7 @@ function startPolling() {
         try {
             await checkAnalysisStatus();
         } catch (error) {
-            console.error('Polling error:', error);
+            console.error('❌ Polling error:', error);
             clearInterval(pollInterval);
             showAnalysisError('Connection lost during analysis. Please refresh and try again.');
         }
@@ -322,7 +405,7 @@ async function checkAnalysisStatus() {
         }
         
     } catch (error) {
-        console.error('Status check error:', error);
+        console.error('❌ Status check error:', error);
         throw error;
     }
 }
@@ -335,22 +418,21 @@ function updateProgressDisplay(statusData) {
     
     let progressPercentage = 20;
     let phaseText = 'Processing...';
-    let detailsText = 'RAIA is analyzing your rewards documents...';
+    let detailsText = 'RAIA is performing intelligent analysis of your policy documents...';
     
     if (statusData.progress) {
         phaseText = statusData.progress.current_phase || phaseText;
         detailsText = statusData.progress.details || detailsText;
         
-        if (phaseText.includes('Phase 1')) progressPercentage = 25;
-        else if (phaseText.includes('Phase 2')) progressPercentage = 45;
-        else if (phaseText.includes('Phase 3')) progressPercentage = 70;
-        else if (phaseText.includes('Phase 4')) progressPercentage = 90;
+        if (phaseText.includes('Phase 1')) progressPercentage = 30;
+        else if (phaseText.includes('Phase 2')) progressPercentage = 70;
+        else if (phaseText.includes('Phase 3')) progressPercentage = 90;
     }
     
-    progressTitle.textContent = 'RAIA Analysis in Progress';
-    progressPhase.textContent = phaseText;
-    progressDetails.textContent = detailsText;
-    progressFill.style.width = `${progressPercentage}%`;
+    if (progressTitle) progressTitle.textContent = 'RAIA Analysis in Progress';
+    if (progressPhase) progressPhase.textContent = phaseText;
+    if (progressDetails) progressDetails.textContent = detailsText;
+    if (progressFill) progressFill.style.width = `${progressPercentage}%`;
 }
 
 function showAnalysisComplete(data) {
@@ -358,24 +440,30 @@ function showAnalysisComplete(data) {
     const resultsDisplay = document.getElementById('resultsDisplay');
     const downloadBtn = document.getElementById('downloadBtn');
     
-    progressContainer.style.display = 'none';
-    resultsDisplay.style.display = 'block';
+    if (progressContainer) progressContainer.style.display = 'none';
+    if (resultsDisplay) resultsDisplay.style.display = 'block';
     
-    const totalDocs = selectedLegalFiles.length + 1;
-    document.getElementById('documentsAnalyzed').textContent = `${totalDocs} Documents Analyzed`;
-    document.getElementById('complianceScore').textContent = 'Available in Report';
-    document.getElementById('requirementsCount').textContent = 'Available in Report';
+    const totalDocs = selectedRegulatoryFiles.length + 1;
+    const documentsAnalyzed = document.getElementById('documentsAnalyzed');
+    const complianceScore = document.getElementById('complianceScore');
+    const requirementsCount = document.getElementById('requirementsCount');
+    
+    if (documentsAnalyzed) documentsAnalyzed.textContent = `${totalDocs} Documents Analyzed`;
+    if (complianceScore) complianceScore.textContent = 'Available in Report';
+    if (requirementsCount) requirementsCount.textContent = 'Available in Report';
     
     if (analysisStartTime) {
         const completionTime = new Date();
         const duration = Math.round((completionTime - analysisStartTime) / 1000);
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
-        document.getElementById('analysisCompleteTime').textContent = 
-            `${minutes}m ${seconds}s`;
+        const analysisCompleteTime = document.getElementById('analysisCompleteTime');
+        if (analysisCompleteTime) {
+            analysisCompleteTime.textContent = `${minutes}m ${seconds}s`;
+        }
     }
     
-    downloadBtn.disabled = false;
+    if (downloadBtn) downloadBtn.disabled = false;
     
     showNotification('🎉 RAIA analysis completed! Your comprehensive rewards report is ready.', 'success');
 }
@@ -385,10 +473,9 @@ function showAnalysisError(errorMessage) {
     const errorDisplay = document.getElementById('errorDisplay');
     const errorMessageEl = document.getElementById('errorMessage');
     
-    progressContainer.style.display = 'none';
-    errorDisplay.style.display = 'block';
-    
-    errorMessageEl.textContent = errorMessage;
+    if (progressContainer) progressContainer.style.display = 'none';
+    if (errorDisplay) errorDisplay.style.display = 'block';
+    if (errorMessageEl) errorMessageEl.textContent = errorMessage;
     
     showNotification('Analysis failed. Please try again.', 'error');
 }
@@ -401,10 +488,12 @@ async function downloadReport() {
     
     try {
         const downloadBtn = document.getElementById('downloadBtn');
-        const originalContent = downloadBtn.innerHTML;
+        const originalContent = downloadBtn ? downloadBtn.innerHTML : '';
         
-        downloadBtn.disabled = true;
-        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing Download...</span>';
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing Download...</span>';
+        }
         
         const response = await fetch(`${API_BASE_URL}/download/${currentTaskId}`);
         
@@ -422,25 +511,29 @@ async function downloadReport() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        downloadBtn.disabled = false;
-        downloadBtn.innerHTML = originalContent;
+        if (downloadBtn) {
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = originalContent;
+        }
         
-        showNotification('Rewards analysis report downloaded successfully!', 'success');
+        showNotification('Professional rewards analysis report downloaded successfully!', 'success');
         
     } catch (error) {
-        console.error('Download error:', error);
+        console.error('❌ Download error:', error);
         showNotification(`Download failed: ${error.message}`, 'error');
         
         const downloadBtn = document.getElementById('downloadBtn');
-        downloadBtn.disabled = false;
-        downloadBtn.innerHTML = '<i class="fas fa-download"></i><span>Download Report</span>';
+        if (downloadBtn) {
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="fas fa-download"></i><span>Download Rewards Analysis Report</span>';
+        }
     }
 }
 
 function startNewAnalysis() {
     currentTaskId = null;
     analysisStartTime = null;
-    selectedLegalFiles = [];
+    selectedRegulatoryFiles = [];
     selectedPolicyFile = null;
     
     if (pollInterval) {
@@ -448,12 +541,15 @@ function startNewAnalysis() {
         pollInterval = null;
     }
     
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('legalFiles').value = '';
-    document.getElementById('policyFile').value = '';
-    
+    const resultsSection = document.getElementById('results');
+    const legalFiles = document.getElementById('legalFiles');
+    const policyFile = document.getElementById('policyFile');
     const legalFilesInfo = document.getElementById('legalFilesInfo');
-    legalFilesInfo.innerHTML = '';
+    
+    if (resultsSection) resultsSection.style.display = 'none';
+    if (legalFiles) legalFiles.value = '';
+    if (policyFile) policyFile.value = '';
+    if (legalFilesInfo) legalFilesInfo.innerHTML = '';
     
     removePolicyFile();
     updateUploadBoxState();
@@ -480,7 +576,6 @@ function updateActiveNav() {
     let currentSection = '';
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
         if (window.scrollY >= sectionTop - 200) {
             currentSection = section.getAttribute('id');
         }
@@ -496,14 +591,18 @@ function updateActiveNav() {
 
 function scrollToUpload() {
     const uploadSection = document.getElementById('upload');
-    uploadSection.scrollIntoView({ behavior: 'smooth' });
+    if (uploadSection) {
+        uploadSection.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 async function checkSystemStatus() {
     try {
         showModal('systemStatusModal');
         const statusContent = document.getElementById('systemStatusContent');
-        statusContent.innerHTML = '<div class="loading-spinner"></div><p>Checking system status...</p>';
+        if (statusContent) {
+            statusContent.innerHTML = '<div class="loading-spinner"></div><p>Checking system status...</p>';
+        }
         
         const response = await fetch(`${API_BASE_URL}/health`);
         const data = await response.json();
@@ -537,18 +636,20 @@ async function checkSystemStatus() {
             `;
         }
         
-        statusContent.innerHTML = statusHtml;
+        if (statusContent) statusContent.innerHTML = statusHtml;
         
     } catch (error) {
-        console.error('System status check failed:', error);
+        console.error('❌ System status check failed:', error);
         const statusContent = document.getElementById('systemStatusContent');
-        statusContent.innerHTML = `
-            <div style="text-align: center;">
-                <i class="fas fa-times-circle" style="font-size: 48px; color: var(--error-color); margin-bottom: 16px;"></i>
-                <h3 style="color: var(--error-color);">Connection Failed</h3>
-                <p>Unable to connect to the backend service. Please ensure the server is running.</p>
-            </div>
-        `;
+        if (statusContent) {
+            statusContent.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-times-circle" style="font-size: 48px; color: var(--error-color); margin-bottom: 16px;"></i>
+                    <h3 style="color: var(--error-color);">Connection Failed</h3>
+                    <p>Unable to connect to RAIA backend service. Please ensure the server is running.</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -557,10 +658,10 @@ async function showSystemInfo() {
         const response = await fetch(`${API_BASE_URL}/capabilities`);
         const data = await response.json();
         
-        showInfoModal('System Capabilities', `
+        const content = `
             <div class="system-info">
                 <h4>AI Intelligence Features:</h4>
-                <ul>
+                <ul style="margin-left: 20px; line-height: 1.8;">
                     <li><strong>Document Understanding:</strong> ${data.ai_intelligence.document_understanding}</li>
                     <li><strong>Rewards Extraction:</strong> ${data.ai_intelligence.rewards_extraction}</li>
                     <li><strong>Equity Analysis:</strong> ${data.ai_intelligence.equity_analysis}</li>
@@ -568,16 +669,18 @@ async function showSystemInfo() {
                 </ul>
                 
                 <h4>Analysis Features:</h4>
-                <ul>
+                <ul style="margin-left: 20px; line-height: 1.8;">
                     ${data.analysis_features.map(feature => `<li>${feature}</li>`).join('')}
                 </ul>
                 
                 <h4>AI Capabilities:</h4>
-                <ul>
+                <ul style="margin-left: 20px; line-height: 1.8;">
                     ${data.ai_capabilities.map(capability => `<li>${capability}</li>`).join('')}
                 </ul>
             </div>
-        `);
+        `;
+        
+        showInfoModal('System Information', content);
     } catch (error) {
         showInfoModal('System Information', '<p>Unable to load system information. Please try again.</p>');
     }
@@ -778,16 +881,20 @@ function showErrorDetails() {
 
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.classList.add('show');
-    modal.style.display = 'flex';
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+    }
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.classList.remove('show');
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
 }
 
 function showInfoModal(title, content) {
@@ -871,7 +978,11 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         if (notification.parentElement) {
             notification.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
         }
     }, 5000);
 }
@@ -885,6 +996,7 @@ function getNotificationIcon(type) {
     }
 }
 
+// Add necessary CSS styles for notifications and animations
 const notificationStyles = document.createElement('style');
 notificationStyles.textContent = `
     @keyframes slideInRight {
@@ -911,10 +1023,22 @@ notificationStyles.textContent = `
         cursor: pointer;
         padding: var(--space-1);
         transition: color var(--transition-base);
+        font-size: 14px;
     }
     
     .notification-close:hover {
         color: var(--text-primary);
     }
+    
+    .loading-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
 `;
-document.head.appendChild(notificationStyles);
+
+// Only add styles once
+if (!document.getElementById('notification-styles')) {
+    notificationStyles.id = 'notification-styles';
+    document.head.appendChild(notificationStyles);
+} 

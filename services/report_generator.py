@@ -2,66 +2,77 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.graphics.shapes import Drawing, Circle, Rect, Line
+from reportlab.graphics import renderPDF
 from datetime import datetime
-from models.schemas import PolicyChecklist, PolicyStatus
+from models.schemas import PolicyAssessment, CriteriaStatus
+import os
 
 class IntelligentReportGenerator:
     def __init__(self):
         self.styles = getSampleStyleSheet()
-        self._setup_dynamic_styles()
+        # Brand colors from frontend
+        self.primary_color = colors.Color(0, 92/255, 77/255)  # #005C4D
+        self.accent_color = colors.Color(196/255, 152/255, 79/255)  # #C4984F
+        self.success_color = colors.Color(16/255, 185/255, 129/255)  # #10b981
+        self.warning_color = colors.Color(245/255, 158/255, 11/255)  # #f59e0b
+        self.error_color = colors.Color(239/255, 68/255, 68/255)  # #ef4444
+        self.text_primary = colors.Color(30/255, 41/255, 59/255)  # #1e293b
+        self.text_secondary = colors.Color(100/255, 116/255, 139/255)  # #64748b
+        self.background_alt = colors.Color(248/255, 250/255, 252/255)  # #f8fafc
+        self.border_color = colors.Color(226/255, 232/255, 240/255)  # #e2e8f0
+        self._setup_professional_styles()
 
-    def _setup_dynamic_styles(self):
-        # Check if styles already exist to avoid duplicates
+    def _setup_professional_styles(self):
         style_names = [style.name for style in self.styles.byName.values()]
         
         if 'ReportTitle' not in style_names:
             self.styles.add(ParagraphStyle(
                 name='ReportTitle',
                 parent=self.styles['Heading1'],
-                fontSize=20,
+                fontSize=22,
                 spaceAfter=30,
                 alignment=TA_CENTER,
-                textColor=colors.black,
+                textColor=self.primary_color,
                 fontName='Helvetica-Bold'
             ))
 
-        if 'SectionHeader' not in style_names:
+        if 'ExecutiveHeader' not in style_names:
             self.styles.add(ParagraphStyle(
-                name='SectionHeader',
+                name='ExecutiveHeader',
+                parent=self.styles['Heading1'],
+                fontSize=16,
+                fontName='Helvetica-Bold',
+                textColor=self.primary_color,
+                alignment=TA_LEFT,
+                spaceAfter=15,
+                spaceBefore=25
+            ))
+
+        if 'CriteriaHeader' not in style_names:
+            self.styles.add(ParagraphStyle(
+                name='CriteriaHeader',
                 parent=self.styles['Heading2'],
                 fontSize=14,
                 fontName='Helvetica-Bold',
-                textColor=colors.black,
+                textColor=self.primary_color,
                 alignment=TA_LEFT,
                 spaceAfter=12,
                 spaceBefore=20,
                 leftIndent=0
             ))
 
-        if 'SubSectionHeader' not in style_names:
+        if 'ProfessionalBody' not in style_names:
             self.styles.add(ParagraphStyle(
-                name='SubSectionHeader',
-                parent=self.styles['Heading3'],
-                fontSize=12,
-                fontName='Helvetica-Bold',
-                textColor=colors.black,
-                alignment=TA_LEFT,
-                spaceAfter=8,
-                spaceBefore=12,
-                leftIndent=20
-            ))
-
-        if 'BodyText' not in style_names:
-            self.styles.add(ParagraphStyle(
-                name='BodyText',
+                name='ProfessionalBody',
                 parent=self.styles['Normal'],
                 fontSize=11,
                 fontName='Helvetica',
-                textColor=colors.black,
+                textColor=self.text_primary,
                 alignment=TA_JUSTIFY,
-                spaceAfter=10,
+                spaceAfter=12,
                 spaceBefore=3,
                 leftIndent=20,
                 rightIndent=20,
@@ -70,13 +81,37 @@ class IntelligentReportGenerator:
                 leading=14
             ))
 
-        if 'StatusText' not in style_names:
+        if 'StatusPresent' not in style_names:
             self.styles.add(ParagraphStyle(
-                name='StatusText',
+                name='StatusPresent',
                 parent=self.styles['Normal'],
                 fontSize=11,
                 fontName='Helvetica-Bold',
-                textColor=colors.black,
+                textColor=self.success_color,
+                alignment=TA_LEFT,
+                spaceAfter=5,
+                leftIndent=30
+            ))
+
+        if 'StatusPartial' not in style_names:
+            self.styles.add(ParagraphStyle(
+                name='StatusPartial',
+                parent=self.styles['Normal'],
+                fontSize=11,
+                fontName='Helvetica-Bold',
+                textColor=self.warning_color,
+                alignment=TA_LEFT,
+                spaceAfter=5,
+                leftIndent=30
+            ))
+
+        if 'StatusMissing' not in style_names:
+            self.styles.add(ParagraphStyle(
+                name='StatusMissing',
+                parent=self.styles['Normal'],
+                fontSize=11,
+                fontName='Helvetica-Bold',
+                textColor=self.error_color,
                 alignment=TA_LEFT,
                 spaceAfter=5,
                 leftIndent=30
@@ -88,34 +123,21 @@ class IntelligentReportGenerator:
                 parent=self.styles['Normal'],
                 fontSize=11,
                 fontName='Helvetica',
-                textColor=colors.black,
+                textColor=self.text_primary,
                 alignment=TA_JUSTIFY,
                 spaceAfter=8,
                 leftIndent=40,
                 rightIndent=20,
-                fontStyle='italic',
                 leading=13
             ))
 
-        if 'SummaryHeader' not in style_names:
+        if 'ExecutiveText' not in style_names:
             self.styles.add(ParagraphStyle(
-                name='SummaryHeader',
-                parent=self.styles['Heading1'],
-                fontSize=16,
-                fontName='Helvetica-Bold',
-                textColor=colors.black,
-                alignment=TA_LEFT,
-                spaceAfter=15,
-                spaceBefore=25
-            ))
-
-        if 'SummaryText' not in style_names:
-            self.styles.add(ParagraphStyle(
-                name='SummaryText',
+                name='ExecutiveText',
                 parent=self.styles['Normal'],
                 fontSize=11,
                 fontName='Helvetica',
-                textColor=colors.black,
+                textColor=self.text_primary,
                 alignment=TA_JUSTIFY,
                 spaceAfter=12,
                 leftIndent=0,
@@ -124,360 +146,324 @@ class IntelligentReportGenerator:
                 wordWrap='CJK'
             ))
 
-        if 'LegendText' not in style_names:
+        if 'BrandText' not in style_names:
             self.styles.add(ParagraphStyle(
-                name='LegendText',
+                name='BrandText',
                 parent=self.styles['Normal'],
                 fontSize=10,
                 fontName='Helvetica',
-                textColor=colors.black,
-                alignment=TA_LEFT,
-                spaceAfter=6,
-                leftIndent=20
+                textColor=self.text_secondary,
+                alignment=TA_CENTER,
+                spaceAfter=6
             ))
 
-    def generate_intelligent_report(self, checklist: PolicyChecklist, doc1_filename: str, doc2_filename: str, output_path: str):
+    def _create_brand_logo(self):
+        """Create RAIA brand logo matching the frontend design"""
+        drawing = Drawing(200, 60)
+        
+        # Main brain circle with gradient-like effect (matching frontend)
+        main_circle = Circle(30, 30, 28)
+        main_circle.fillColor = self.primary_color
+        main_circle.strokeColor = self.accent_color
+        main_circle.strokeWidth = 1
+        drawing.add(main_circle)
+        
+        # Brain hemispheres (more accurate to frontend brain icon)
+        left_hemisphere = Circle(22, 32, 12)
+        left_hemisphere.fillColor = colors.white
+        left_hemisphere.strokeColor = colors.white
+        left_hemisphere.strokeWidth = 0.5
+        drawing.add(left_hemisphere)
+        
+        right_hemisphere = Circle(38, 32, 12)
+        right_hemisphere.fillColor = colors.white
+        right_hemisphere.strokeColor = colors.white
+        right_hemisphere.strokeWidth = 0.5
+        drawing.add(right_hemisphere)
+        
+        # Central division line
+        center_line = Line(30, 20, 30, 44)
+        center_line.strokeColor = self.primary_color
+        center_line.strokeWidth = 2
+        drawing.add(center_line)
+        
+        # Brain texture lines (simplified)
+        texture_line1 = Line(18, 38, 26, 35)
+        texture_line1.strokeColor = self.primary_color
+        texture_line1.strokeWidth = 1
+        drawing.add(texture_line1)
+        
+        texture_line2 = Line(34, 35, 42, 38)
+        texture_line2.strokeColor = self.primary_color
+        texture_line2.strokeWidth = 1
+        drawing.add(texture_line2)
+        
+        texture_line3 = Line(18, 26, 26, 29)
+        texture_line3.strokeColor = self.primary_color
+        texture_line3.strokeWidth = 1
+        drawing.add(texture_line3)
+        
+        texture_line4 = Line(34, 29, 42, 26)
+        texture_line4.strokeColor = self.primary_color
+        texture_line4.strokeWidth = 1
+        drawing.add(texture_line4)
+        
+        return drawing
+
+    def generate_professional_report(self, assessment: PolicyAssessment, regulatory_docs: str, 
+                                   policy_filename: str, output_path: str):
         doc = SimpleDocTemplate(
             output_path,
             pagesize=letter,
             rightMargin=72,
             leftMargin=72,
+            title="RAIA - Reward AI Assistant Report",
+            author="RAIA", 
+            subject="Policy Assessment Report",
             topMargin=72,
             bottomMargin=72
         )
 
         story = []
-
-        # Title and header
-        story.extend(self._create_report_header())
-        
-        # Legend
-        story.extend(self._create_legend())
-        
-        # Main analysis sections
-        story.extend(self._create_analysis_sections(checklist))
-        
-        # Overall feedback section
-        story.extend(self._create_overall_feedback(checklist))
+        story.extend(self._create_branded_header(assessment, policy_filename))
+        story.extend(self._create_executive_summary(assessment))
+        story.extend(self._create_coverage_overview(assessment))
+        story.extend(self._create_criteria_analysis(assessment))
+        story.extend(self._create_strategic_recommendations(assessment))
+        story.extend(self._create_implementation_roadmap(assessment))
 
         doc.build(story)
-    
-    def _create_report_header(self):
+
+    def _create_branded_header(self, assessment: PolicyAssessment, policy_filename: str):
         elements = []
-        elements.append(Paragraph("RAIA - Rewards and Compensation Policy Analysis Report", self.styles['ReportTitle']))
+        
+        # Brand header with logo and colors
+        # header_table_data = [
+        #     [self._create_brand_logo(), "", ""],
+        #     ["", "", ""]
+        # ]
+        
+        # header_table = Table(header_table_data, colWidths=[1.5*inch, 3*inch, 1.5*inch], rowHeights=[60, 10])
+        # header_table.setStyle(TableStyle([
+        #     ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        #     ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+        #     ('SPAN', (1, 0), (2, 0)),
+        #     ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+        #     ('LINEBELOW', (0, 1), (-1, 1), 2, self.primary_color)
+        # ]))
+        
+        # elements.append(header_table)
         elements.append(Spacer(1, 20))
         
-        date_text = f"Analysis Date: {datetime.now().strftime('%B %d, %Y')}"
-        elements.append(Paragraph(date_text, self.styles['SummaryText']))
+        # Brand title with gradient-like effect
+        brand_title = """
+        <para align="center" fontSize="24" fontName="Helvetica-Bold">
+        <font color="#005C4D">RAIA</font> – <font color="#C4984F">Reward AI Assistant Report</font>
+        </para>
+        """
+        elements.append(Paragraph(brand_title, self.styles['ReportTitle']))
+        elements.append(Spacer(1, 15))
+        
+        # Document info in branded card-like layout
+        info_data = [
+            ["Document:", assessment.document_analysis.title],
+            ["Analysis Date:", datetime.now().strftime('%B %d, %Y')],
+            ["Overall Coverage:", f"{assessment.overall_coverage:.1f}%"],
+            ["Maturity Score:", f"{assessment.maturity_score:.1f}%"]
+        ]
+        
+        info_table = Table(info_data, colWidths=[1.5*inch, 4.5*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), self.background_alt),
+            ('TEXTCOLOR', (0, 0), (0, -1), self.primary_color),
+            ('TEXTCOLOR', (1, 0), (1, -1), self.text_primary),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, self.border_color)
+        ]))
+        
+        elements.append(info_table)
         elements.append(Spacer(1, 30))
         
         return elements
 
-    def _create_legend(self):
+    def _create_executive_summary(self, assessment: PolicyAssessment):
         elements = []
+        elements.append(Paragraph("Executive Summary", self.styles['ExecutiveHeader']))
         
-        elements.append(Paragraph("Analysis Framework", self.styles['SummaryHeader']))
-        elements.append(Spacer(1, 10))
-
-        legend_intro = """This comprehensive analysis evaluates the compensation policy against industry best practices and regulatory requirements. Each section is assessed using the following criteria:"""
-        elements.append(Paragraph(legend_intro, self.styles['SummaryText']))
-        elements.append(Spacer(1, 10))
-
-        legend_items = [
-            "<b>Aligned:</b> Meets industry standards and regulatory requirements with no significant gaps identified.",
-            "<b>Needs Consideration:</b> Generally adequate but has opportunities for improvement or minor compliance gaps.",
-            "<b>Unaligned/Missing:</b> Significant gaps identified that require immediate attention or policy enhancement."
-        ]
-
-        for item in legend_items:
-            elements.append(Paragraph(f"• {item}", self.styles['LegendText']))
+        present_count = sum(1 for c in assessment.criteria_results if c.status == CriteriaStatus.PRESENT)
+        partial_count = sum(1 for c in assessment.criteria_results if c.status == CriteriaStatus.PARTIAL)
+        missing_count = sum(1 for c in assessment.criteria_results if c.status == CriteriaStatus.MISSING)
         
-        elements.append(Spacer(1, 25))
-        return elements
-
-    def _create_analysis_sections(self, checklist: PolicyChecklist):
-        elements = []
+        summary_text = f"""
+        This comprehensive analysis evaluates the policy document against 9 key organizational criteria. 
+        The assessment reveals {present_count} criteria fully present, {partial_count} partially covered, 
+        and {missing_count} requiring implementation. The overall coverage score of {assessment.overall_coverage:.1f}% 
+        indicates {"excellent" if assessment.overall_coverage >= 80 else "good" if assessment.overall_coverage >= 60 else "moderate" if assessment.overall_coverage >= 40 else "significant"} 
+        policy maturity with {"minimal" if assessment.overall_coverage >= 80 else "moderate" if assessment.overall_coverage >= 60 else "substantial"} 
+        opportunities for enhancement.
         
-        # Define the structured sections as per your requirements
-        analysis_sections = [
-            {
-                'letter': 'A',
-                'title': 'Organizational Development',
-                'items': ['Workforce Planning', 'Organization Structure', 'Job Architecture'],
-                'description': 'This section evaluates the foundational organizational structure and workforce planning capabilities.'
-            },
-            {
-                'letter': 'B',
-                'title': 'Talent Acquisition',
-                'items': ['Employment Categories', 'Sourcing', 'Selection', 'Onboarding'],
-                'description': 'Assessment of talent acquisition processes and employment categorization frameworks.'
-            },
-            {
-                'letter': 'C', 
-                'title': 'Learning & Development',
-                'items': ['Learning Need Analysis', 'Implementation and Evaluation', 'L&D Programs'],
-                'description': 'Evaluation of learning and development infrastructure and program effectiveness.'
-            },
-            {
-                'letter': 'D',
-                'title': 'Performance Management',
-                'items': ['Performance Variables', 'Evaluating and Rating Performance', 'Performance Calibration', 'Management of Low Performance', 'Management of Performance Related Disagreements'],
-                'description': 'Comprehensive review of performance management systems and related processes.'
-            },
-            {
-                'letter': 'E',
-                'title': 'Talent Management',
-                'items': ['Succession Planning', 'Career Progression'],
-                'description': 'Analysis of talent development and succession planning mechanisms.'
-            },
-            {
-                'letter': 'F',
-                'title': 'Human Capital Operations',
-                'items': ['Employee Relations', 'Employee Services', 'Leave Management', 'Separation Processes'],
-                'description': 'Review of day-to-day human capital operational processes and employee services.'
-            },
-            {
-                'letter': 'G',
-                'title': 'Compensation & Benefits',
-                'items': ['Salary Structure', 'Processing of Monthly Salaries', 'Salary Increases', 'Allowances & Benefits', 'Variable Pay', 'Promotion'],
-                'description': 'Detailed analysis of compensation framework, benefits structure, and related processes.'
-            },
-            {
-                'letter': 'H',
-                'title': 'Compliance',
-                'items': ['Ministry of Human Resources and Social Development and Saudi Labor Laws', 'General Organization for Social Insurance (GOSI) Laws', 'Anti-Harassment Law', 'Saudization'],
-                'description': 'Assessment of regulatory compliance and adherence to local labor laws and requirements.'
-            }
-        ]
-
-        # Group checklist items by category for analysis
-        checklist_items_by_category = {}
-        for item in checklist.items:
-            category = item.category
-            if category not in checklist_items_by_category:
-                checklist_items_by_category[category] = []
-            checklist_items_by_category[category].append(item)
-
-        # Generate each section
-        for section in analysis_sections:
-            elements.extend(self._create_section_analysis(section, checklist_items_by_category))
+        The policy demonstrates {assessment.document_analysis.structure_quality.lower()} structural quality 
+        with {assessment.document_analysis.content_density.lower()} content density. Key strengths include 
+        {", ".join(assessment.document_analysis.semantic_themes[:3]) if assessment.document_analysis.semantic_themes else "foundational policy elements"}. 
+        Priority areas for development focus on {", ".join([c.criteria_name for c in assessment.criteria_results if c.status == CriteriaStatus.MISSING][:3]) if missing_count > 0 else "continuous improvement and refinement"}.
+        """
         
-        return elements
-
-    def _create_section_analysis(self, section, checklist_items_by_category):
-        elements = []
-        
-        # Section header
-        section_title = f"{section['letter']}. {section['title']}"
-        elements.append(Paragraph(section_title, self.styles['SectionHeader']))
-        
-        # Section description
-        elements.append(Paragraph(section['description'], self.styles['BodyText']))
-        elements.append(Spacer(1, 10))
-        
-        # Analyze each item in the section
-        for item_name in section['items']:
-            matching_item = self._find_matching_checklist_item(item_name, checklist_items_by_category)
-            
-            # Sub-section header
-            elements.append(Paragraph(item_name, self.styles['SubSectionHeader']))
-            
-            if matching_item:
-                # Use actual analysis results
-                status_text = self._get_status_text(matching_item.status)
-                elements.append(Paragraph(f"Status: {status_text}", self.styles['StatusText']))
-                
-                # Analysis content
-                if matching_item.feedback:
-                    elements.append(Paragraph(matching_item.feedback, self.styles['BodyText']))
-                
-                if matching_item.comments:
-                    elements.append(Paragraph(f"Analysis: {matching_item.comments}", self.styles['BodyText']))
-                
-                if matching_item.suggested_amendments and matching_item.suggested_amendments.strip():
-                    elements.append(Paragraph(f"Recommendations: {matching_item.suggested_amendments}", self.styles['RecommendationText']))
-            else:
-                # Generate contextual analysis for missing items
-                status_text = "Needs Consideration"
-                elements.append(Paragraph(f"Status: {status_text}", self.styles['StatusText']))
-                
-                analysis_text = self._generate_contextual_analysis(item_name, section['title'])
-                elements.append(Paragraph(analysis_text, self.styles['BodyText']))
-                
-                recommendation_text = self._get_contextual_recommendation(item_name, section['title'])
-                elements.append(Paragraph(f"Recommendations: {recommendation_text}", self.styles['RecommendationText']))
-            
-            elements.append(Spacer(1, 12))
-        
-        elements.append(Spacer(1, 15))
-        return elements
-
-    def _find_matching_checklist_item(self, item_name, checklist_items_by_category):
-        """Find a checklist item that matches the section item name"""
-        item_name_lower = item_name.lower()
-        
-        # Create keyword mapping for better matching
-        keyword_mappings = {
-            'workforce planning': ['workforce', 'planning', 'manpower'],
-            'organization structure': ['organization', 'structure', 'organizational'],
-            'job architecture': ['job', 'architecture', 'position', 'role'],
-            'employment categories': ['employment', 'categories', 'classification'],
-            'sourcing': ['sourcing', 'recruitment', 'hiring'],
-            'selection': ['selection', 'interview', 'assessment'],
-            'onboarding': ['onboarding', 'orientation', 'induction'],
-            'learning need analysis': ['learning', 'training', 'development'],
-            'performance variables': ['performance', 'kpi', 'metrics'],
-            'succession planning': ['succession', 'planning', 'talent'],
-            'career progression': ['career', 'progression', 'advancement'],
-            'salary structure': ['salary', 'structure', 'compensation'],
-            'salary increases': ['salary', 'increase', 'increment'],
-            'allowances': ['allowances', 'benefits', 'perks'],
-            'variable pay': ['variable', 'bonus', 'incentive'],
-            'promotion': ['promotion', 'advancement'],
-            'anti-harassment': ['harassment', 'discrimination']
-        }
-        
-        # Search through all categories
-        for category, items in checklist_items_by_category.items():
-            for item in items:
-                item_text_lower = item.item.lower()
-                requirement_lower = item.requirement.lower()
-                
-                # Check direct keyword mappings first
-                item_keywords = keyword_mappings.get(item_name_lower, item_name_lower.split())
-                for keyword in item_keywords:
-                    if keyword in item_text_lower or keyword in requirement_lower:
-                        return item
-                
-                # Check for partial matches
-                if any(word in item_text_lower for word in item_name_lower.split() if len(word) > 3):
-                    return item
-        
-        return None
-
-    def _generate_contextual_analysis(self, item_name, section_title):
-        """Generate contextual analysis based on item name and section"""
-        item_lower = item_name.lower()
-        
-        analysis_templates = {
-            'workforce planning': "The current policy framework requires enhancement in workforce planning capabilities. Strategic workforce planning is essential for organizational effectiveness and should include demand forecasting, capacity planning, and resource allocation mechanisms.",
-            'organization structure': "The organizational structure provisions need clarity regarding design principles and classification systems. A well-defined structure should distinguish between divisions, departments, sections, units, and teams with clear reporting relationships.",
-            'job architecture': "Job architecture framework requires development to support career progression and compensation alignment. This should include job families, levels, and competency frameworks.",
-            'employment categories': "Employment categorization needs refinement to ensure clear distinction between different employment types and their respective terms and conditions.",
-            'performance calibration': "Performance calibration processes require strengthening to ensure consistency and fairness across the organization. Clear governance structures and committee compositions should be established.",
-            'succession planning': "Succession planning mechanisms need clarification regarding roles and responsibilities of HR, business lines, and governing bodies to ensure effective talent pipeline management.",
-            'career progression': "Career progression pathways require clear definition of approval authorities and advancement criteria to support employee development and retention.",
-            'salary increases': "Salary increase mechanisms need distinction between merit-based and off-cycle increases with clear triggers and rationales for each type.",
-            'allowances & benefits': "Allowances and benefits framework requires review of unified allowance clauses and refinement of acting duration caps to ensure policy consistency.",
-            'variable pay': "Variable pay structure needs clarity in linking performance criteria to long-term incentive plans and ensuring alignment with organizational objectives.",
-            'promotion': "Promotion policies require review, particularly regarding multi-grade promotions and their impact on organizational equity and career progression.",
-            'anti-harassment law': "Anti-harassment provisions need strengthening with dedicated sections addressing harassment types, consequences, and reporting mechanisms."
-        }
-        
-        return analysis_templates.get(item_lower, f"The {item_name.lower()} component requires comprehensive review to ensure alignment with industry best practices and organizational objectives. Current provisions may benefit from enhancement to address potential gaps and improve effectiveness.")
-
-    def _get_contextual_recommendation(self, item_name, section_title):
-        """Generate contextual recommendations based on item name"""
-        item_lower = item_name.lower()
-        
-        recommendation_templates = {
-            'workforce planning': "Confirm if workforce planning falls within NRC charter scope for review and endorsement. Establish clear governance and decision-making authorities.",
-            'organization structure': "Incorporate design principles and classification systems for different organizational functions including divisions, departments, sections, units, and teams.",
-            'performance calibration': "Define membership and composition of Performance Management Committee with clear roles and responsibilities for calibration processes.",
-            'performance related disagreements': "Ensure comprehensive Grievance Management Policy is in place to address performance-related disputes effectively.",
-            'succession planning': "Clarify roles and responsibilities of HR, business lines, and NRC in succession planning processes to ensure coordinated approach.",
-            'career progression': "Define clear approval authorities for career progression decisions and establish transparent advancement criteria.",
-            'salary increases': "Distinguish triggers and rationales for merit versus off-cycle increases to ensure fair and consistent application.",
-            'allowances & benefits': "Review unified allowance clauses and refine acting duration caps to improve policy clarity and administration.",
-            'variable pay': "Clarify linkage between Long-Term Incentive Plan (LTIP) performance criteria and variable pay components.",
-            'promotion': "Revisit three-grade promotion policies to ensure they align with organizational equity and career development objectives.",
-            'anti-harassment law': "Include dedicated section addressing harassment types, consequences, and reporting mechanisms to ensure comprehensive coverage."
-        }
-        
-        return recommendation_templates.get(item_lower, f"Develop comprehensive framework for {item_name.lower()} with clear policies, procedures, and governance mechanisms.")
-
-    def _get_status_text(self, status: PolicyStatus) -> str:
-        if status == PolicyStatus.ALIGNED:
-            return "Aligned"
-        elif status == PolicyStatus.MODERATE:
-            return "Needs Consideration"
-        else:
-            return "Unaligned/Missing"
-
-    def _create_overall_feedback(self, checklist: PolicyChecklist):
-        elements = []
-
-        elements.append(PageBreak())
-        elements.append(Paragraph("Overall Policy Assessment", self.styles['SummaryHeader']))
-        elements.append(Spacer(1, 15))
-
-        # Statistics summary
-        stats = checklist.overall_feedback["statistics"]
-        
-        summary_data = [
-            ["Assessment Category", "Count"],
-            ["Aligned", str(stats["aligned"])],
-            ["Needs Consideration", str(stats["moderate"])],
-            ["Unaligned/Missing", str(stats["unaligned"])]
-        ]
-
-        summary_table = Table(summary_data, colWidths=[2.5*inch, 1*inch])
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 11),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-        ]))
-        
-        elements.append(summary_table)
+        elements.append(Paragraph(summary_text, self.styles['ExecutiveText']))
         elements.append(Spacer(1, 20))
         
-        # Executive summary
-        elements.append(Paragraph("Executive Summary", self.styles['SummaryHeader']))
+        return elements
+
+    def _create_coverage_overview(self, assessment: PolicyAssessment):
+        elements = []
+        elements.append(Paragraph("Coverage Overview", self.styles['ExecutiveHeader']))
         
-        executive_summary = """This comprehensive analysis reveals opportunities for policy enhancement across multiple areas. The assessment indicates that while foundational elements are present, strategic improvements can significantly strengthen the policy framework's effectiveness and regulatory alignment. The identified areas for consideration represent opportunities to enhance organizational capability and ensure robust compliance with evolving industry standards."""
+        coverage_data = [["Criteria", "Coverage", "Coverage %"]]
         
-        elements.append(Paragraph(executive_summary, self.styles['SummaryText']))
+        for criteria in assessment.criteria_results:
+            status_text = "✓ Present" if criteria.status == CriteriaStatus.PRESENT else \
+                         "◐ Partial" if criteria.status == CriteriaStatus.PARTIAL else "✗ Missing"
+            
+            coverage_data.append([
+                criteria.criteria_name,
+                status_text,
+                f"{criteria.coverage_percentage:.0f}%"
+            ])
+        
+        coverage_table = Table(coverage_data, colWidths=[4.5*inch, 1.2*inch, 1*inch])
+        coverage_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), self.primary_color),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), self.text_primary),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (2, 1), (2, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, self.border_color),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, self.background_alt])
+        ]))
+        
+        elements.append(coverage_table)
+        elements.append(Spacer(1, 25))
+        
+        return elements
+
+    def _create_criteria_analysis(self, assessment: PolicyAssessment):
+        elements = []
+        elements.append(Paragraph("Detailed Criteria Analysis", self.styles['ExecutiveHeader']))
+        elements.append(Spacer(1, 10))
+        
+        for i, criteria in enumerate(assessment.criteria_results, 1):
+            criteria_title = f"{i}. {criteria.criteria_name}"
+            elements.append(Paragraph(criteria_title, self.styles['CriteriaHeader']))
+            
+            status_style = 'StatusPresent' if criteria.status == CriteriaStatus.PRESENT else \
+                          'StatusPartial' if criteria.status == CriteriaStatus.PARTIAL else 'StatusMissing'
+            
+            status_text = f"Coverage: {criteria.status.value} ({criteria.coverage_percentage:.0f}% coverage)"
+            elements.append(Paragraph(status_text, self.styles[status_style]))
+            
+            if criteria.status == CriteriaStatus.PRESENT:
+                analysis_text = f"""
+                <b>Quality Assessment:</b> {criteria.quality_assessment}
+                
+                <b>Found Provisions:</b> {"; ".join(criteria.found_content[:3]) if criteria.found_content else "Comprehensive coverage identified"}
+                
+                <b>Regulatory Alignment:</b> {criteria.regulatory_alignment}
+                """
+            elif criteria.status == CriteriaStatus.PARTIAL:
+                analysis_text = f"""
+                <b>Current Coverage:</b> {criteria.quality_assessment}
+                
+                <b>Present Elements:</b> {"; ".join(criteria.found_content[:3]) if criteria.found_content else "Basic provisions identified"}
+                
+                <b>Missing Elements:</b> {"; ".join(criteria.missing_elements[:3]) if criteria.missing_elements else "Additional coverage required"}
+                """
+            else:
+                analysis_text = f"""
+                <b>Gap Analysis:</b> {criteria.criteria_name} provisions are not adequately addressed in the current policy framework.
+                
+                <b>Missing Elements:</b> {"; ".join(criteria.missing_elements[:3]) if criteria.missing_elements else "Comprehensive framework required"}
+                
+                <b>Impact:</b> This gap represents a significant opportunity for policy enhancement and organizational development.
+                """
+            
+            elements.append(Paragraph(analysis_text, self.styles['ProfessionalBody']))
+            
+            if criteria.recommendations:
+                elements.append(Paragraph("<b>Recommendations:</b>", self.styles['ProfessionalBody']))
+                for rec in criteria.recommendations[:2]:
+                    elements.append(Paragraph(f"• {rec}", self.styles['RecommendationText']))
+            
+            elements.append(Spacer(1, 15))
+        
+        return elements
+
+    def _create_strategic_recommendations(self, assessment: PolicyAssessment):
+        elements = []
+        elements.append(PageBreak())
+        elements.append(Paragraph("Strategic Recommendations", self.styles['ExecutiveHeader']))
+        
+        intro_text = f"""
+        Based on the comprehensive analysis revealing {assessment.overall_coverage:.1f}% policy coverage, 
+        the following strategic recommendations are prioritized to enhance organizational effectiveness and regulatory compliance:
+        """
+        elements.append(Paragraph(intro_text, self.styles['ExecutiveText']))
         elements.append(Spacer(1, 15))
         
-        # Key findings
-        elements.append(Paragraph("Key Findings", self.styles['SummaryHeader']))
+        if assessment.strategic_recommendations:
+            for i, recommendation in enumerate(assessment.strategic_recommendations, 1):
+                elements.append(Paragraph(f"<b>{i}. {recommendation}</b>", self.styles['ProfessionalBody']))
         
-        key_findings = """The analysis identifies areas where improvements can be made to further enhance the policy's effectiveness and relevance. It is advisable to consider adding certain elements to bolster the policy and address any potential gaps or oversights. By incorporating these suggestions, the policy can be strengthened to ensure robustness and alignment with organizational goals. Feedback on these aspects will contribute to refining the policy and optimizing its impact."""
+        elements.append(Spacer(1, 20))
         
-        elements.append(Paragraph(key_findings, self.styles['SummaryText']))
-        elements.append(Spacer(1, 15))
+        return elements
+
+    def _create_implementation_roadmap(self, assessment: PolicyAssessment):
+        elements = []
         
-        # Strategic recommendations
-        elements.append(Paragraph("Strategic Recommendations", self.styles['SummaryHeader']))
+        # Branded footer with colors
+        footer_table_data = [
+            ["", ""],
+        ]
         
-        if checklist.recommendations:
-            for i, recommendation in enumerate(checklist.recommendations[:5], 1):
-                elements.append(Paragraph(f"{i}. {recommendation}", self.styles['SummaryText']))
-        else:
-            default_recommendations = [
-                "Conduct comprehensive policy review to address identified gaps and enhancement opportunities.",
-                "Implement governance frameworks for critical processes including performance management and succession planning.",
-                "Strengthen compliance mechanisms to ensure alignment with regulatory requirements.",
-                "Develop clear procedures and approval authorities for compensation and career progression decisions.",
-                "Establish regular policy review cycles to maintain currency and effectiveness."
-            ]
-            for i, recommendation in enumerate(default_recommendations, 1):
-                elements.append(Paragraph(f"{i}. {recommendation}", self.styles['SummaryText']))
+        footer_table = Table(footer_table_data, colWidths=[6*inch], rowHeights=[2])
+        footer_table.setStyle(TableStyle([
+            ('LINEABOVE', (0, 0), (-1, 0), 2, self.primary_color),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.white)
+        ]))
         
         elements.append(Spacer(1, 15))
+        elements.append(footer_table)
+        elements.append(Spacer(1, 10))
         
-        # Additional considerations
-        elements.append(Paragraph("Additional Considerations", self.styles['SummaryHeader']))
+        footer_text = f"""
+        This analysis provides a comprehensive foundation for policy enhancement. 
+        Professional consultation is recommended for detailed implementation planning and regulatory compliance verification.
+        """
+        elements.append(Paragraph(footer_text, self.styles['ExecutiveText']))
+        elements.append(Spacer(1, 10))
         
-        additional_text = """It is suggested to streamline duplicated content and avoid overlapping provisions to improve clarity and usability. Regular review and updates should be implemented to ensure the policy remains current with regulatory changes and industry best practices. Consider establishing a policy governance committee to oversee ongoing maintenance and enhancement efforts."""
-        
-        elements.append(Paragraph(additional_text, self.styles['SummaryText']))
+        # Branded report generation info
+        brand_footer = f"""
+        <para align="center" fontSize="10">
+        <b>Report Generated:</b> {datetime.now().strftime('%B %d, %Y at %I:%M %p')} by 
+        <font color="#005C4D"><b>RAIA</b></font> - <font color="#C4984F">Reward AI Assistant Report</font>
+        </para>
+        """
+        elements.append(Paragraph(brand_footer, self.styles['BrandText']))
         
         return elements
