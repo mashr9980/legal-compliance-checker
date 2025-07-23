@@ -12,19 +12,15 @@ class DocumentProcessor:
             'obligations': r'\b(shall|must|required|mandatory|obligated)\b',
             'definitions': r'\b(means|defined as|refers to|includes)\b'
         }
-        # Initialize LLM analyzer for intelligent processing
         self.llm_analyzer = None
     
     def set_llm_analyzer(self, analyzer):
-        """Set the LLM analyzer for intelligent document processing"""
         self.llm_analyzer = analyzer
     
     async def intelligent_extract_text(self, pdf_path: str) -> Dict[str, any]:
-        """Enhanced text extraction with intelligent content analysis"""
         try:
-            print(f"🔍 Starting intelligent text extraction from: {pdf_path}")
+            print(f"Starting intelligent text extraction from: {pdf_path}")
             
-            # Basic PDF extraction
             raw_text = self.extract_text(pdf_path)
             
             if len(raw_text) < 100:
@@ -35,17 +31,14 @@ class DocumentProcessor:
                     "recommendations": ["Document appears to have minimal text", "Check if PDF is readable"]
                 }
             
-            # Intelligent content analysis using LLM
             if self.llm_analyzer:
-                print("🧠 Performing intelligent content analysis...")
+                print("Performing intelligent content analysis...")
                 content_analysis = await self._intelligent_content_analysis(raw_text)
             else:
                 content_analysis = self._basic_content_analysis(raw_text)
             
-            # Enhanced structure analysis
             structure = self.analyze_document_structure(raw_text)
             
-            # Quality assessment
             quality_assessment = self._assess_document_quality(raw_text, structure)
             
             return {
@@ -63,7 +56,7 @@ class DocumentProcessor:
             }
             
         except Exception as e:
-            print(f"❌ Error in intelligent text extraction: {e}")
+            print(f"Error in intelligent text extraction: {e}")
             return {
                 "extracted_text": f"EXTRACTION_ERROR: {str(e)}",
                 "quality": "ERROR",
@@ -72,7 +65,6 @@ class DocumentProcessor:
             }
     
     async def _intelligent_content_analysis(self, text: str) -> Dict[str, any]:
-        """Use LLM to intelligently analyze document content"""
         if not self.llm_analyzer:
             return self._basic_content_analysis(text)
         
@@ -104,21 +96,19 @@ Provide analysis in JSON format:
 Provide only the JSON response with detailed analysis."""
         
         try:
-            response = await self.llm_analyzer.generate_with_retry(prompt, system_prompt, 1024)
+            response = await self.llm_analyzer.generate_with_context(prompt, system_prompt, 1024)
             return self._parse_content_analysis(response)
         except Exception as e:
             print(f"Error in intelligent content analysis: {e}")
             return self._basic_content_analysis(text)
     
     def _parse_content_analysis(self, response: str) -> Dict[str, any]:
-        """Parse LLM content analysis response"""
         try:
             import json
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 analysis = json.loads(json_match.group(0))
                 
-                # Ensure all expected fields exist
                 default_fields = {
                     "document_themes": [],
                     "content_type": "unknown",
@@ -144,10 +134,8 @@ Provide only the JSON response with detailed analysis."""
         return self._basic_content_analysis("")
     
     def _basic_content_analysis(self, text: str) -> Dict[str, any]:
-        """Basic content analysis fallback"""
         text_lower = text.lower()
         
-        # Detect themes
         theme_keywords = {
             "employment": ["employment", "employee", "employer", "work", "job"],
             "legal": ["law", "legal", "regulation", "compliance", "statute"],
@@ -161,7 +149,6 @@ Provide only the JSON response with detailed analysis."""
             if any(keyword in text_lower for keyword in keywords):
                 themes.append(theme)
         
-        # Detect content type
         if any(word in text_lower for word in ["contract", "agreement"]):
             content_type = "contract"
         elif any(word in text_lower for word in ["law", "regulation", "code"]):
@@ -186,7 +173,6 @@ Provide only the JSON response with detailed analysis."""
         }
     
     def _assess_document_quality(self, text: str, structure: Dict) -> Dict[str, any]:
-        """Comprehensive document quality assessment"""
         word_count = len(text.split())
         
         quality_indicators = {
@@ -196,7 +182,6 @@ Provide only the JSON response with detailed analysis."""
             "organization": "good" if len(structure.get("legal_references", [])) > 1 else "fair"
         }
         
-        # Overall quality assessment
         good_count = sum(1 for v in quality_indicators.values() if v == "good")
         fair_count = sum(1 for v in quality_indicators.values() if v == "fair")
         
@@ -209,7 +194,6 @@ Provide only the JSON response with detailed analysis."""
         else:
             overall_quality = "POOR"
         
-        # Generate recommendations
         recommendations = []
         if quality_indicators["length"] == "poor":
             recommendations.append("Document appears to have insufficient content")
@@ -228,22 +212,19 @@ Provide only the JSON response with detailed analysis."""
         }
     
     def extract_text(self, pdf_path: str) -> str:
-        """Enhanced PDF text extraction with intelligent processing"""
         try:
-            print(f"🔍 Extracting text from: {pdf_path}")
+            print(f"Extracting text from: {pdf_path}")
             extracted_text = ""
             extraction_methods = []
             
             with pdfplumber.open(pdf_path) as pdf:
                 total_pages = len(pdf.pages)
-                print(f"📄 Processing {total_pages} pages...")
+                print(f"Processing {total_pages} pages...")
                 
                 for i, page in enumerate(pdf.pages):
                     page_text = ""
                     
-                    # Multi-method extraction approach
                     try:
-                        # Method 1: Direct text extraction
                         text_extract = page.extract_text()
                         if text_extract and len(text_extract.strip()) > 20:
                             page_text = text_extract
@@ -252,7 +233,6 @@ Provide only the JSON response with detailed analysis."""
                     except Exception as e:
                         print(f"   Page {i+1}: Direct text extraction failed - {e}")
                     
-                    # Method 2: Table extraction if direct fails
                     if not page_text or len(page_text.strip()) < 20:
                         try:
                             table_text = self._extract_table_text(page)
@@ -263,7 +243,6 @@ Provide only the JSON response with detailed analysis."""
                         except Exception as e:
                             print(f"   Page {i+1}: Table extraction failed - {e}")
                     
-                    # Method 3: Character-level extraction for difficult pages
                     if not page_text or len(page_text.strip()) < 10:
                         try:
                             char_text = self._extract_characters(page)
@@ -283,31 +262,28 @@ Provide only the JSON response with detailed analysis."""
                     else:
                         print(f"   Page {i+1}: No text extracted")
             
-            print(f"🔧 Extraction methods used: {', '.join(set(extraction_methods))}")
+            print(f"Extraction methods used: {', '.join(set(extraction_methods))}")
             
-            # Enhanced text processing
             processed_text = self._comprehensive_text_processing(extracted_text)
-            print(f"✅ Final extraction: {len(processed_text)} characters")
+            print(f"Final extraction: {len(processed_text)} characters")
             
             if len(processed_text) < 100:
-                print(f"⚠️ Warning: Very little text extracted ({len(processed_text)} chars)")
+                print(f"Warning: Very little text extracted ({len(processed_text)} chars)")
                 return self._create_extraction_report(pdf_path, processed_text, extraction_methods)
             
             return processed_text
             
         except Exception as e:
             error_msg = f"Critical error extracting from {pdf_path}: {str(e)}"
-            print(f"❌ {error_msg}")
+            print(f"Error: {error_msg}")
             return f"EXTRACTION_ERROR: {error_msg}"
     
     def _extract_characters(self, page) -> str:
-        """Extract individual characters for difficult pages"""
         try:
             chars = page.chars
             if not chars:
                 return ""
             
-            # Group characters into words and lines
             text_content = ""
             for char in chars:
                 if 'text' in char:
@@ -319,7 +295,6 @@ Provide only the JSON response with detailed analysis."""
             return ""
     
     def _extract_table_text(self, page) -> str:
-        """Enhanced table text extraction"""
         try:
             tables = page.extract_tables()
             table_text = ""
@@ -344,42 +319,35 @@ Provide only the JSON response with detailed analysis."""
             return ""
     
     def _intelligent_page_cleaning(self, page_text: str) -> str:
-        """Intelligent page cleaning with enhanced pattern recognition"""
         if not page_text:
             return ""
         
         text = page_text.strip()
         
-        # Advanced text normalization
         text = re.sub(r'\n+', '\n', text)
         text = re.sub(r'\s+', ' ', text)
         text = re.sub(r'([.!?])\s*\n\s*([A-Z])', r'\1 \2', text)
         text = re.sub(r'\n([a-z])', r' \1', text)
         
-        # Split into lines for intelligent filtering
         lines = text.split('\n')
         meaningful_lines = []
         
         for line in lines:
             line = line.strip()
             if self._is_meaningful_line(line):
-                # Additional cleaning for meaningful lines
                 line = self._clean_meaningful_line(line)
                 meaningful_lines.append(line)
         
         return '\n'.join(meaningful_lines)
     
     def _clean_meaningful_line(self, line: str) -> str:
-        """Clean and enhance meaningful lines"""
-        # Remove excessive whitespace
         line = re.sub(r'\s+', ' ', line)
         
-        # Fix common OCR errors
         ocr_fixes = {
-            r'\bl\b': 'I',  # lowercase l to uppercase I
-            r'\b0\b': 'O',  # zero to O in certain contexts
-            r'rn': 'm',     # common OCR error
-            r'vv': 'w',     # double v to w
+            r'\bl\b': 'I',
+            r'\b0\b': 'O',
+            r'rn': 'm',
+            r'vv': 'w',
         }
         
         for pattern, replacement in ocr_fixes.items():
@@ -388,24 +356,21 @@ Provide only the JSON response with detailed analysis."""
         return line.strip()
     
     def _is_meaningful_line(self, line: str) -> bool:
-        """Enhanced meaningful line detection"""
         if len(line) < 3:
             return False
         
-        # Skip obvious headers/footers
         skip_patterns = [
-            r'^\d+$',  # page numbers
-            r'^Page\s+\d+',  # page headers
+            r'^\d+$',
+            r'^Page\s+\d+',
             r'^(Header|Footer|Copyright|©)',
             r'^(Confidential|Draft|Version)',
-            r'^\s*[-_=]+\s*$',  # separator lines
+            r'^\s*[-_=]+\s*$',
         ]
         
         for pattern in skip_patterns:
             if re.match(pattern, line, re.IGNORECASE):
                 return False
         
-        # Enhanced content detection
         legal_indicators = [
             'article', 'section', 'chapter', 'clause', 'shall', 'must', 'required',
             'contract', 'agreement', 'employee', 'employer', 'party', 'parties',
@@ -415,66 +380,52 @@ Provide only the JSON response with detailed analysis."""
         
         line_lower = line.lower()
         
-        # Strong indicators of legal content
         if any(indicator in line_lower for indicator in legal_indicators):
             return True
         
-        # Meaningful if it's a substantial sentence
         word_count = len(line.split())
         if word_count >= 5 and '.' in line:
             return True
         
-        # Check for structured content (lists, definitions, etc.)
         if re.match(r'^\d+\.|\([a-z]\)|\([0-9]+\)', line.strip()):
             return True
         
         return False
     
     def _comprehensive_text_processing(self, raw_text: str) -> str:
-        """Enhanced comprehensive text processing"""
         if not raw_text:
             return ""
         
         text = raw_text.strip()
         
-        # Advanced text normalization
         text = re.sub(r'\n+', '\n', text)
         text = re.sub(r'\s+', ' ', text)
         
-        # Smart sentence boundary detection
         text = re.sub(r'([.!?])\s*\n\s*([A-Z])', r'\1\n\2', text)
         text = re.sub(r'\n([a-z])', r' \1', text)
         
-        # Split into sentences for intelligent filtering
         sentences = re.split(r'(?<=[.!?])\s+', text)
         meaningful_sentences = []
         
         for sentence in sentences:
             sentence = sentence.strip()
             if self._is_meaningful_sentence(sentence):
-                # Enhanced sentence cleaning
                 sentence = self._enhance_sentence(sentence)
                 meaningful_sentences.append(sentence)
         
-        # Reconstruct text with proper formatting
         final_text = ' '.join(meaningful_sentences)
         
-        # Final cleanup
         final_text = re.sub(r'\s+', ' ', final_text)
         final_text = re.sub(r'([.!?])\s*([A-Z])', r'\1 \2', final_text)
         
         return final_text.strip()
     
     def _enhance_sentence(self, sentence: str) -> str:
-        """Enhance sentence quality and readability"""
-        # Fix common formatting issues
         sentence = re.sub(r'\s+', ' ', sentence)
         
-        # Ensure proper spacing after punctuation
         sentence = re.sub(r'([.!?])([A-Z])', r'\1 \2', sentence)
         sentence = re.sub(r'([,;:])([A-Za-z])', r'\1 \2', sentence)
         
-        # Fix capitalization after periods
         def capitalize_after_period(match):
             return match.group(1) + ' ' + match.group(2).upper()
         
@@ -483,7 +434,6 @@ Provide only the JSON response with detailed analysis."""
         return sentence.strip()
     
     def _is_meaningful_sentence(self, sentence: str) -> bool:
-        """Enhanced meaningful sentence detection"""
         if len(sentence) < 10:
             return False
         
@@ -491,7 +441,6 @@ Provide only the JSON response with detailed analysis."""
         if word_count < 3:
             return False
         
-        # Enhanced legal content indicators
         legal_content_indicators = [
             'shall', 'must', 'required', 'mandatory', 'prohibited', 'entitled',
             'agreement', 'contract', 'employee', 'employer', 'party', 'parties',
@@ -509,18 +458,15 @@ Provide only the JSON response with detailed analysis."""
         if has_legal_content:
             return True
         
-        # Accept substantial sentences that aren't headers/footers
         if word_count >= 7 and not self._is_header_footer_content(sentence):
             return True
         
-        # Accept sentences with proper structure
         if '.' in sentence and word_count >= 5:
             return True
         
         return False
     
     def _is_header_footer_content(self, text: str) -> bool:
-        """Enhanced header/footer detection"""
         text_lower = text.lower()
         
         header_footer_patterns = [
@@ -543,7 +489,6 @@ Provide only the JSON response with detailed analysis."""
         return False
     
     def analyze_document_structure(self, text: str) -> Dict[str, any]:
-        """Enhanced document structure analysis"""
         if not text or len(text) < 50:
             return self._create_minimal_structure()
         
@@ -569,14 +514,12 @@ Provide only the JSON response with detailed analysis."""
         return structure
     
     def _calculate_content_density(self, text: str) -> str:
-        """Calculate how dense the content is"""
         words = text.split()
         word_count = len(words)
         
         if word_count == 0:
             return "EMPTY"
         
-        # Count meaningful words
         meaningful_words = [w for w in words if len(w) > 3 and w.isalpha()]
         density_ratio = len(meaningful_words) / word_count
         
@@ -588,7 +531,6 @@ Provide only the JSON response with detailed analysis."""
             return "LOW"
     
     def _find_structural_indicators(self, text: str) -> Dict[str, bool]:
-        """Find various structural indicators in the document"""
         return {
             "has_numbered_sections": bool(re.search(r'^\d+\.', text, re.MULTILINE)),
             "has_lettered_sections": bool(re.search(r'^\([a-z]\)', text, re.MULTILINE)),
@@ -602,14 +544,12 @@ Provide only the JSON response with detailed analysis."""
         }
     
     def _assess_basic_quality(self, text: str) -> str:
-        """Basic quality assessment of extracted text"""
         word_count = len(text.split())
         
-        # Check for extraction artifacts
         artifacts = [
-            len(re.findall(r'[^\w\s.!?,:;()"\'-]', text)),  # Strange characters
-            len(re.findall(r'\b\w{1,2}\b', text)),  # Very short words
-            len(re.findall(r'\w{30,}', text))  # Extremely long words
+            len(re.findall(r'[^\w\s.!?,:;()"\'-]', text)),
+            len(re.findall(r'\b\w{1,2}\b', text)),
+            len(re.findall(r'\w{30,}', text))
         ]
         
         artifact_ratio = sum(artifacts) / max(word_count, 1)
@@ -619,16 +559,11 @@ Provide only the JSON response with detailed analysis."""
         elif word_count < 500:
             return 'BASIC'
         elif artifact_ratio > 0.1:
-            return 'FAIR'  # High artifact ratio
+            return 'FAIR'
         elif word_count < 2000:
             return 'GOOD'
         else:
             return 'EXCELLENT'
-    
-    # [All other existing methods remain the same: _create_minimal_structure, _detect_language, 
-    # _extract_dates, _extract_numbers, _find_sections, _find_legal_references, _find_obligations, 
-    # _find_definitions, _find_contract_elements, _extract_key_terms, _estimate_complexity, 
-    # chunk_text, _create_extraction_report]
     
     def _create_minimal_structure(self) -> Dict[str, any]:
         return {
@@ -696,7 +631,7 @@ Provide only the JSON response with detailed analysis."""
         section_patterns = [
             r'(Chapter|Section|Article|Part|Title)\s+[IVX\d]+[:\-\s]*([^\n]{10,100})',
             r'^(\d+\.(?:\d+\.)*)\s+([A-Z][^\n]{10,100})',
-            r'^([A-Z][A-Z\s]{8,50})\s*$',
+            r'^([A-Z][A-Z\s]{8,50})\s*',
             r'(WHEREAS|THEREFORE|NOW THEREFORE|IN WITNESS WHEREOF)',
             r'(Employment|Compensation|Benefits|Termination|Confidentiality|Obligations|Rights|Duties)'
         ]
@@ -836,11 +771,9 @@ Provide only the JSON response with detailed analysis."""
             return "VERY_HIGH"
     
     def chunk_text(self, text: str) -> List[str]:
-        """Intelligent text chunking for LLM processing"""
         if len(text) <= CHUNK_SIZE:
             return [text]
         
-        # Try to chunk by sentences first
         sentences = re.split(r'(?<=[.!?])\s+', text)
         chunks = []
         current_chunk = ""
@@ -856,7 +789,6 @@ Provide only the JSON response with detailed analysis."""
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
         
-        # Add overlap for context continuity
         if len(chunks) <= 1:
             return chunks
         
@@ -871,7 +803,6 @@ Provide only the JSON response with detailed analysis."""
         return overlapped_chunks
     
     def _create_extraction_report(self, pdf_path: str, extracted_text: str, methods: List[str]) -> str:
-        """Create detailed extraction report for problematic documents"""
         report = f"""
         INTELLIGENT DOCUMENT EXTRACTION REPORT
         ======================================
